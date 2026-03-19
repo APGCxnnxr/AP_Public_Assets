@@ -1667,6 +1667,16 @@ function filterZones() {
 }
 
 const adKiller = `<script>(function(){
+    const _realOpen = window.open.bind(window);
+    window.open = function(url, target, features) {
+        if (!url || url === '' || url === 'about:blank') return null;
+        const adHosts = /doubleclick|googlesyndication|adnxs|popunder|clickunder|trafficjunky|exoclick|adcash|propellerads|popcash/i;
+        if (adHosts.test(url)) return null;
+        return _realOpen(url, target, features);
+    };
+    function isObfuscated(src) {
+        return src && /br[a-z0-9]+\.com|advert|popunder|clickunder/i.test(src);
+    }
     function isAd(el) {
         return el.id && /^sidebarad/.test(el.id);
     }
@@ -1681,6 +1691,9 @@ const adKiller = `<script>(function(){
     function nuke(root) {
         root.querySelectorAll('[id^="sidebarad"],[class~="sidebar-frame"],[class~="sidebar-close"]')
             .forEach(nukeEl);
+        root.querySelectorAll('script[src]').forEach(s => {
+            if (isObfuscated(s.src)) s.remove();
+        });
     }
     new MutationObserver(function(ms){
         for(var i=0;i<ms.length;i++){
@@ -1688,6 +1701,7 @@ const adKiller = `<script>(function(){
             for(var j=0;j<nodes.length;j++){
                 var n=nodes[j];
                 if(n.nodeType!==1) continue;
+                if(n.tagName==='SCRIPT' && isObfuscated(n.src)) { n.remove(); continue; }
                 if(isAd(n)||n.classList.contains('sidebar-frame')||n.classList.contains('sidebar-close'))
                     { n.remove(); continue; }
                 nuke(n);
@@ -1698,8 +1712,14 @@ const adKiller = `<script>(function(){
 }());<\/script>`;
 
 function writeToFrame(frame, html) {
+    const cleaned = html
+        .replace(/<script[^>]*src=["'][^"']*(googletagmanager|googlesyndication|pagead2|fundingchoices|adsbygoogle)[^"']*["'][^>]*><\/script>/gi, '')
+        .replace(/<script[^>]*>\s*window\.dataLayer[\s\S]*?<\/script>/gi, '')
+        .replace(/<script[^>]*>\(function\(_0x[\s\S]*?<\/script>/g, '')
+        .replace(/<ins[^>]*adsbygoogle[\s\S]*?<\/ins>/gi, '')
+        .replace(/<script[^>]*>\s*(adsbygoogle[\s\S]*?)<\/script>/gi, '');
     frame.contentDocument.open();
-    frame.contentDocument.write(adKiller + html);
+    frame.contentDocument.write(adKiller + cleaned);
     frame.contentDocument.close();
 }
 
