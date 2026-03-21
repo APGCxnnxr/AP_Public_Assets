@@ -5,26 +5,27 @@
 <div id="r"></div>
 <div id="tp-ui"></div>
 <div id="tp-toast" style="
-  position: fixed;
-  top: 1.25rem;
-  left: 50%;
-  transform: translateX(-50%) translateY(-120%);
-  background: rgba(0,0,0,0.8);
-  backdrop-filter: blur(12px);
-  border: 1px solid #fc2651;
-  border-radius: 10px;
-  padding: 0.75rem 1.25rem;
-  color: #f1f5f9;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  font-size: 14px;
-  font-weight: 600;
-  z-index: 2147483647;
-  width: max-content;
-  max-width: 50vw;
-  text-align: center;
-  pointer-events: none;
-  transition: transform 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.35s;
-  opacity: 0;
+  position: fixed !important;
+  top: 1.25rem !important;
+  left: 50% !important;
+  transform: translateX(-50%) translateY(-120%) !important;
+  background: rgba(0,0,0,0.8) !important;
+  backdrop-filter: blur(12px) !important;
+  border: 1px solid #fc2651 !important;
+  border-radius: 10px !important;
+  padding: 0.75rem 1.25rem !important;
+  color: #f1f5f9 !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  z-index: 2147483647 !important;
+  width: max-content !important;
+  max-width: 50vw !important;
+  text-align: center !important;
+  pointer-events: none !important;
+  transition: transform 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.35s !important;
+  opacity: 0 !important;
+  display: block !important;
 "></div>
 
 <script>
@@ -161,12 +162,13 @@ function showToast(msg, duration) {
   duration = duration || 6000;
   const t = S.toast;
   t.textContent = msg;
-  t.style.opacity = '1';
-  t.style.transform = 'translateX(-50%) translateY(0)';
+  t.style.setProperty('opacity', '1', 'important');
+  t.style.setProperty('transform', 'translateX(-50%) translateY(0)', 'important');
+  console.log('[TP] toast opacity now:', t.style.opacity, 'transform:', t.style.transform);
   clearTimeout(t._timer);
   t._timer = setTimeout(function() {
-    t.style.opacity = '0';
-    t.style.transform = 'translateX(-50%) translateY(-120%)';
+    t.style.setProperty('opacity', '0', 'important');
+    t.style.setProperty('transform', 'translateX(-50%) translateY(-120%)', 'important');
   }, duration);
 }
 
