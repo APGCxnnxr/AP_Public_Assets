@@ -4,6 +4,28 @@
 
 <div id="r"></div>
 <div id="tp-ui"></div>
+<div id="tp-toast" style="
+  position: fixed;
+  top: 1.25rem;
+  left: 50%;
+  transform: translateX(-50%) translateY(-120%);
+  background: rgba(0,0,0,0.8);
+  backdrop-filter: blur(12px);
+  border: 1px solid #fc2651;
+  border-radius: 10px;
+  padding: 0.75rem 1.25rem;
+  color: #f1f5f9;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  z-index: 2147483647;
+  width: max-content;
+  max-width: 50vw;
+  text-align: center;
+  pointer-events: none;
+  transition: transform 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.35s;
+  opacity: 0;
+"></div>
 
 <script>
 const WS_URL = 'wss://tpws.b-cdn.net';
@@ -81,28 +103,6 @@ shadow.innerHTML = `
     transition: opacity 0.15s;
   }
   .prompt-box button:hover { opacity: 0.85; }
-  #tp-toast {
-    position: fixed;
-    top: 1.25rem;
-    left: 50%;
-    transform: translateX(-50%) translateY(-120%);
-    background: rgba(0,0,0,0.5);
-    backdrop-filter: blur(12px);
-    border: 1px solid #fc2651;
-    border-radius: 10px;
-    padding: 0.75rem 1.25rem;
-    color: #f1f5f9;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    font-size: 14px;
-    font-weight: 600;
-    z-index: 2147483647;
-    width: max-content;
-    max-width: 50vw;
-    text-align: center;
-    pointer-events: none;
-    transition: transform 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.35s;
-    opacity: 0;
-  }
 </style>
 
 <div id="lockscreen">
@@ -119,8 +119,6 @@ shadow.innerHTML = `
     <button id="username-btn">Let's go</button>
   </div>
 </div>
-
-<div id="tp-toast"></div>
 `;
 
 const S = {
@@ -128,7 +126,7 @@ const S = {
   prompt: shadow.getElementById('username-prompt'),
   input: shadow.getElementById('username-input'),
   btn: shadow.getElementById('username-btn'),
-  toast: shadow.getElementById('tp-toast')
+  toast: document.getElementById('tp-toast')
 };
 
 console.log('[TP] shadow elements:', Object.fromEntries(Object.entries(S).map(([k,v]) => [k, !!v])));
