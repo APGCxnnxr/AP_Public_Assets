@@ -18,17 +18,6 @@
   #lockscreen h1 { font-size: 1.6rem; margin-bottom: 1rem; color: #fc2651; }
   #lockscreen p  { color: #94a3b8; margin-bottom: 0.5rem; }
   #lockscreen h2 { font-size: 1rem; font-weight: 400; color: #64748b; margin-top: 1rem; }
-  #username-prompt {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.85);
-    backdrop-filter: blur(8px);
-    z-index: 99998;
-    align-items: center;
-    justify-content: center;
-  }
-  #username-prompt.show { display: flex; }
   .prompt-box {
     background: #0a0a0a;
     border: 1px solid #2a2a2a;
@@ -53,6 +42,7 @@
     font-family: inherit;
     margin-bottom: 0.75rem;
     transition: border-color 0.2s, box-shadow 0.2s;
+    box-sizing: border-box;
   }
   .prompt-box input:focus { border-color: #fc2651; box-shadow: 0 0 0 3px rgba(252,38,81,0.15); }
   .prompt-box button {
@@ -75,13 +65,22 @@
 
 <div id="r"></div>
 
-<div id="lockscreen">
+<div id="lockscreen" style="display: none !important;">
   <h1>No more Turkish Playground for you! You shall contact the site owner to get the new one.</h1>
   <p>or i might just reject (Lookin at u Jag)</p>
   <h2>This is due to people not doing their work before playing which is badd!!!</h2>
 </div>
 
-<div id="username-prompt">
+<div id="username-prompt" style="
+  display: none !important;
+  position: fixed !important;
+  inset: 0 !important;
+  background: rgba(0,0,0,0.85) !important;
+  backdrop-filter: blur(8px) !important;
+  z-index: 99998 !important;
+  align-items: center !important;
+  justify-content: center !important;
+">
   <div class="prompt-box">
     <h3>One sec</h3>
     <p>Enter a username so the site knows who you are</p>
@@ -135,6 +134,28 @@ const tempUsername = localStorage.getItem('tp_temp_username');
 let username = localStorage.getItem('tp_username') || tempUsername;
 
 console.log('[TP] username:', username);
+
+function showPrompt() {
+  const p = document.getElementById('username-prompt');
+  if (p) p.style.setProperty('display', 'flex', 'important');
+  const i = document.getElementById('username-input');
+  if (i) i.focus();
+}
+
+function hidePrompt() {
+  const p = document.getElementById('username-prompt');
+  if (p) p.style.setProperty('display', 'none', 'important');
+}
+
+function showLockscreen() {
+  const l = document.getElementById('lockscreen');
+  if (l) l.style.setProperty('display', 'flex', 'important');
+}
+
+function hideLockscreen() {
+  const l = document.getElementById('lockscreen');
+  if (l) l.style.setProperty('display', 'none', 'important');
+}
 
 function showToast(msg, duration) {
   console.log('[TP] showToast called:', msg);
@@ -201,8 +222,7 @@ function saveUsername() {
   username = val;
   console.log('[TP] saveUsername:', username);
   localStorage.setItem('tp_username', username);
-  const prompt = document.getElementById('username-prompt');
-  if (prompt) prompt.classList.remove('show');
+  hidePrompt();
   if (wsReady) {
     ws.send(JSON.stringify({ type: 'self_rename', oldName: oldName, newName: username }));
     ws.send(JSON.stringify({ type: 'identify', username: username }));
@@ -220,8 +240,7 @@ function loadSite() {
   const prompt = document.getElementById('username-prompt');
   const toast = document.getElementById('tp-toast');
 
-  if (lockscreen) lockscreen.style.display = 'none';
-  else console.warn('[TP] loadSite: #lockscreen not found');
+  hideLockscreen();
 
   fetch("https://cdn.jsdelivr.net/gh/CatHead132/CatHead132.github.io@latest/gnupdated.html?t=" + Date.now())
     .then(function(r) {
@@ -237,7 +256,7 @@ function loadSite() {
 
       ['#lockscreen', '#username-prompt', '#tp-toast'].forEach(function(sel) {
         const el = d.querySelector(sel);
-        if (el) { console.log('[TP] stripped duplicate', sel, 'from fetched html'); el.remove(); }
+        if (el) { console.log('[TP] stripped duplicate', sel); el.remove(); }
       });
 
       const t = x.querySelector("title");
@@ -350,13 +369,9 @@ document.addEventListener('keydown', function(e) {
       locked = false;
       localStorage.setItem('unlocked', '1');
       pos = 0;
-      const lockscreen = document.getElementById('lockscreen');
-      const prompt = document.getElementById('username-prompt');
-      const input = document.getElementById('username-input');
       if (!localStorage.getItem('tp_username')) {
-        if (lockscreen) lockscreen.style.display = 'none';
-        if (prompt) prompt.classList.add('show');
-        if (input) input.focus();
+        hideLockscreen();
+        showPrompt();
       } else {
         location.reload();
       }
@@ -368,30 +383,20 @@ document.addEventListener('keydown', function(e) {
 
 connectWS();
 
-const lockscreenEl = document.getElementById('lockscreen');
-const promptEl = document.getElementById('username-prompt');
-const inputEl = document.getElementById('username-input');
-
-console.log('[TP] elements found - lockscreen:', !!lockscreenEl, 'prompt:', !!promptEl, 'input:', !!inputEl);
+console.log('[TP] elements found - lockscreen:', !!document.getElementById('lockscreen'), 'prompt:', !!document.getElementById('username-prompt'), 'input:', !!document.getElementById('username-input'));
 
 if (locked) {
-  if (lockscreenEl) lockscreenEl.style.display = 'flex';
-  else console.warn('[TP] startup: #lockscreen not found');
+  showLockscreen();
 } else {
   if (!localStorage.getItem('tp_username')) {
-    if (promptEl) promptEl.classList.add('show');
-    if (inputEl) inputEl.focus();
+    showPrompt();
   } else {
     loadSite();
   }
 }
 
-if (inputEl) {
-  inputEl.addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') saveUsername();
-  });
-} else {
-  console.warn('[TP] startup: #username-input not found');
-}
+document.getElementById('username-input').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') saveUsername();
+});
 </script>
 </body></html>
