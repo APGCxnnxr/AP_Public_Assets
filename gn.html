@@ -136,16 +136,38 @@ function getToastContainer() {
   return c;
 }
 
+function typeText(el, text, speed, onDone) {
+  let i = 0;
+  el.textContent = '';
+  const cursor = document.createElement('span');
+  cursor.textContent = '|';
+  cursor.style.cssText = 'opacity:1;animation:none;margin-left:1px;color:#fc2651;';
+  el.appendChild(cursor);
+  function tick() {
+    if (i < text.length) {
+      cursor.before(text[i]);
+      i++;
+      setTimeout(tick, speed);
+    } else {
+      setTimeout(function() {
+        cursor.style.cssText = 'opacity:0;transition:opacity 0.3s;margin-left:1px;';
+        setTimeout(function() { cursor.remove(); if (onDone) onDone(); }, 300);
+      }, 300);
+    }
+  }
+  tick();
+}
+
 function showToast(msg, duration) {
   duration = duration || 6000;
   const container = getToastContainer();
+  const typingDuration = msg.length * 40;
 
   const wrapper = document.createElement('div');
-  wrapper.style.cssText = 'overflow:hidden!important;max-height:0!important;transition:max-height 0.35s cubic-bezier(0.4,0,0.2,1), margin-bottom 0.35s cubic-bezier(0.4,0,0.2,1)!important;margin-bottom:0!important;';
+  wrapper.style.cssText = 'overflow:hidden!important;max-height:0!important;transition:max-height 0.35s cubic-bezier(0.4,0,0.2,1),margin-bottom 0.35s cubic-bezier(0.4,0,0.2,1)!important;margin-bottom:0!important;';
 
   const t = document.createElement('div');
-  t.style.cssText = 'background:rgba(0,0,0,0.82)!important;backdrop-filter:blur(14px)!important;border:1px solid #fc2651!important;border-radius:12px!important;padding:0.9rem 1.6rem!important;color:#f1f5f9!important;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif!important;font-size:15px!important;font-weight:600!important;width:max-content!important;max-width:55vw!important;text-align:center!important;opacity:0!important;transform:translateY(-6px)!important;transition:opacity 0.3s,transform 0.3s!important;';
-  t.textContent = msg;
+  t.style.cssText = 'background:rgba(0,0,0,0.82)!important;backdrop-filter:blur(14px)!important;border:1px solid #fc2651!important;border-radius:12px!important;padding:0.9rem 1.6rem!important;color:#f1f5f9!important;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif!important;font-size:15px!important;font-weight:600!important;width:max-content!important;max-width:55vw!important;text-align:center!important;opacity:0!important;transform:translateY(-6px)!important;transition:opacity 0.3s,transform 0.3s!important;white-space:pre-wrap!important;';
 
   wrapper.appendChild(t);
   container.insertBefore(wrapper, container.firstChild);
@@ -157,6 +179,9 @@ function showToast(msg, duration) {
       wrapper.style.setProperty('margin-bottom', '0.5rem', 'important');
       t.style.setProperty('opacity', '1', 'important');
       t.style.setProperty('transform', 'translateY(0)', 'important');
+      setTimeout(function() {
+        typeText(t, msg, 40, null);
+      }, 200);
     });
   });
 
@@ -171,7 +196,7 @@ function showToast(msg, duration) {
         toastItems = toastItems.filter(function(x) { return x !== wrapper; });
       }, 350);
     }, 300);
-  }, duration);
+  }, duration + typingDuration);
 }
 
 const _origAddEL = EventTarget.prototype.addEventListener;
@@ -258,7 +283,7 @@ function loadSite() {
         if (s.type) n.type = s.type;
         document.body.appendChild(n);
       });
-    }).catch(function(err) {
+    }).catch(function() {
       siteLoaded = false;
     });
 }
