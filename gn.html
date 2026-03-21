@@ -1,51 +1,124 @@
 <!DOCTYPE html>
-<html><head><meta charset="UTF-8"></head>
+<html><head><meta charset="UTF-8">
+<style>
+  #lockscreen {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: #000;
+    color: #f1f5f9;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 2rem;
+    z-index: 99999;
+  }
+  #lockscreen h1 { font-size: 1.6rem; margin-bottom: 1rem; color: #fc2651; }
+  #lockscreen p  { color: #94a3b8; margin-bottom: 0.5rem; }
+  #lockscreen h2 { font-size: 1rem; font-weight: 400; color: #64748b; margin-top: 1rem; }
+  #username-prompt {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    backdrop-filter: blur(8px);
+    z-index: 99998;
+    align-items: center;
+    justify-content: center;
+  }
+  #username-prompt.show { display: flex; }
+  .prompt-box {
+    background: #0a0a0a;
+    border: 1px solid #2a2a2a;
+    border-radius: 14px;
+    padding: 2rem;
+    width: 100%;
+    max-width: 360px;
+    text-align: center;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  .prompt-box h3 { color: #f1f5f9; font-size: 1.1rem; margin-bottom: 0.4rem; }
+  .prompt-box p  { color: #64748b; font-size: 13px; margin-bottom: 1.25rem; }
+  .prompt-box input {
+    width: 100%;
+    background: #000;
+    border: 1px solid #2a2a2a;
+    border-radius: 8px;
+    color: #f1f5f9;
+    font-size: 14px;
+    padding: 0.7rem 1rem;
+    outline: none;
+    font-family: inherit;
+    margin-bottom: 0.75rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .prompt-box input:focus { border-color: #fc2651; box-shadow: 0 0 0 3px rgba(252,38,81,0.15); }
+  .prompt-box button {
+    width: 100%;
+    background: #fc2651;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 0.7rem;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    transition: opacity 0.15s;
+  }
+  .prompt-box button:hover { opacity: 0.85; }
+  #tp-toast {
+    position: fixed;
+    top: 1.25rem;
+    left: 50%;
+    transform: translateX(-50%) translateY(-120%);
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid #fc2651;
+    border-radius: 10px;
+    padding: 0.75rem 1.25rem;
+    color: #f1f5f9;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    z-index: 2147483647;
+    width: max-content;
+    max-width: 50vw;
+    text-align: center;
+    pointer-events: none;
+    transition: transform 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.35s;
+    opacity: 0;
+  }
+  #tp-toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+</style>
+</head>
 <body style="margin:0;padding:0;background:#000">
-<script>
-(function() {
 
+<div id="r"></div>
+
+<div id="lockscreen">
+  <h1>No more Turkish Playground for you! You shall contact the site owner to get the new one.</h1>
+  <p>or i might just reject (Lookin at u Jag)</p>
+  <h2>This is due to people not doing their work before playing which is badd!!!</h2>
+</div>
+
+<div id="username-prompt">
+  <div class="prompt-box">
+    <h3>One sec</h3>
+    <p>Enter a username so the site knows who you are</p>
+    <input type="text" id="username-input" placeholder="your name" maxlength="24" autocomplete="off">
+    <button onclick="saveUsername()">Let's go</button>
+  </div>
+</div>
+
+<div id="tp-toast"></div>
+
+<script>
 const WS_URL = 'wss://tpws.b-cdn.net';
 const KONAMI = ["ArrowUp","ArrowUp","ArrowDown","ArrowDown","ArrowLeft","ArrowRight","ArrowLeft","ArrowRight","b","a","Enter"];
-
-const css = `
-#tp-lockscreen{display:none;position:fixed;inset:0;background:#000;color:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:2rem;z-index:99999;}
-#tp-lockscreen h1{font-size:1.6rem;margin-bottom:1rem;color:#fc2651;margin-top:0}
-#tp-lockscreen p{color:#94a3b8;margin-bottom:0.5rem}
-#tp-lockscreen h2{font-size:1rem;font-weight:400;color:#64748b;margin-top:1rem}
-#tp-prompt{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);z-index:99998;align-items:center;justify-content:center;}
-#tp-prompt.show{display:flex}
-.tp-box{background:#0a0a0a;border:1px solid #2a2a2a;border-radius:14px;padding:2rem;width:100%;max-width:360px;text-align:center;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;}
-.tp-box h3{color:#f1f5f9;font-size:1.1rem;margin-bottom:0.4rem;margin-top:0}
-.tp-box p{color:#64748b;font-size:13px;margin-bottom:1.25rem}
-.tp-box input{width:100%;background:#000;border:1px solid #2a2a2a;border-radius:8px;color:#f1f5f9;font-size:14px;padding:0.7rem 1rem;outline:none;font-family:inherit;margin-bottom:0.75rem;box-sizing:border-box;transition:border-color 0.2s,box-shadow 0.2s;}
-.tp-box input:focus{border-color:#fc2651;box-shadow:0 0 0 3px rgba(252,38,81,0.15)}
-.tp-box button{width:100%;background:#fc2651;color:#fff;border:none;border-radius:8px;padding:0.7rem;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity 0.15s;}
-.tp-box button:hover{opacity:0.85}
-#tp-toast{position:fixed;top:1.25rem;left:50%;transform:translateX(-50%) translateY(-120%);background:rgba(0,0,0,0.5);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid #fc2651;border-radius:10px;padding:0.75rem 1.25rem;color:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;font-weight:600;z-index:2147483647;width:max-content;max-width:50vw;text-align:center;pointer-events:none;transition:transform 0.35s cubic-bezier(0.4,0,0.2,1),opacity 0.35s;opacity:0;}
-#tp-toast.show{transform:translateX(-50%) translateY(0);opacity:1}
-`;
-
-const styleEl = document.createElement('style');
-styleEl.textContent = css;
-document.head.appendChild(styleEl);
-
-const lockEl = document.createElement('div');
-lockEl.id = 'tp-lockscreen';
-lockEl.innerHTML = '<h1>No more Turkish Playground for you! You shall contact the site owner to get the new one.</h1><p>or i might just reject (Lookin at u Jag)</p><h2>This is due to people not doing their work before playing which is badd!!!</h2>';
-document.documentElement.appendChild(lockEl);
-
-const promptEl = document.createElement('div');
-promptEl.id = 'tp-prompt';
-promptEl.innerHTML = '<div class="tp-box"><h3>One sec</h3><p>Enter a username so the site knows who you are</p><input type="text" id="tp-username-input" placeholder="your name" maxlength="24" autocomplete="off"><button id="tp-username-btn">Let\'s go</button></div>';
-document.documentElement.appendChild(promptEl);
-
-const toastEl = document.createElement('div');
-toastEl.id = 'tp-toast';
-document.documentElement.appendChild(toastEl);
-
-const siteContainer = document.createElement('div');
-siteContainer.id = 'tp-r';
-document.body.appendChild(siteContainer);
 
 let pos = 0;
 let ws = null;
@@ -54,33 +127,23 @@ let siteLoaded = false;
 let locked = localStorage.getItem('unlocked') !== '1';
 let currentGameId = null;
 
+console.log('[TP] init, locked:', locked);
+
 if (!localStorage.getItem('tp_temp_username')) {
   localStorage.setItem('tp_temp_username', 'user_' + Math.floor(Math.random() * 9000 + 1000));
 }
-let username = localStorage.getItem('tp_username') || localStorage.getItem('tp_temp_username');
+const tempUsername = localStorage.getItem('tp_temp_username');
+let username = localStorage.getItem('tp_username') || tempUsername;
 
-function ensureToast() {
-  let t = document.getElementById('tp-toast');
-  if (!t) {
-    t = document.createElement('div');
-    t.id = 'tp-toast';
-    t.style.cssText = 'position:fixed;top:1.25rem;left:50%;transform:translateX(-50%) translateY(-120%);background:rgba(0,0,0,0.5);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid #fc2651;border-radius:10px;padding:0.75rem 1.25rem;color:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif;font-size:14px;font-weight:600;z-index:2147483647;width:max-content;max-width:50vw;text-align:center;pointer-events:none;transition:transform 0.35s cubic-bezier(0.4,0,0.2,1),opacity 0.35s;opacity:0;';
-    document.documentElement.appendChild(t);
-    if (!document.getElementById('tp-toast-style')) {
-      const s = document.createElement('style');
-      s.id = 'tp-toast-style';
-      s.textContent = '#tp-toast.show{transform:translateX(-50%) translateY(0)!important;opacity:1!important}';
-      document.head.appendChild(s);
-    }
-  }
-  return t;
-}
+console.log('[TP] username:', username);
 
 function showToast(msg, duration) {
+  console.log('[TP] showToast called:', msg);
+  const t = document.getElementById('tp-toast');
+  if (!t) { console.warn('[TP] showToast: #tp-toast not found'); return; }
   duration = duration || 6000;
-  const t = ensureToast();
   const fsEl = document.fullscreenElement || document.webkitFullscreenElement;
-  const parent = fsEl || document.documentElement;
+  const parent = fsEl || document.body;
   if (t.parentElement !== parent) parent.appendChild(t);
   t.textContent = msg;
   t.classList.add('show');
@@ -90,10 +153,10 @@ function showToast(msg, duration) {
 
 document.addEventListener('fullscreenchange', function() {
   const t = document.getElementById('tp-toast');
-  if (!t) return;
+  if (!t) { console.warn('[TP] fullscreenchange: #tp-toast not found'); return; }
   const fsEl = document.fullscreenElement;
   if (fsEl) fsEl.appendChild(t);
-  else document.documentElement.appendChild(t);
+  else document.body.appendChild(t);
 });
 
 const _origAddEL = EventTarget.prototype.addEventListener;
@@ -109,12 +172,14 @@ function checkGameId() {
   const id = params.get('id') || null;
   if (id !== currentGameId) {
     currentGameId = id;
+    console.log('[TP] gameId changed:', currentGameId);
     sendGameUpdate();
   }
 }
 
 function sendGameUpdate() {
   if (wsReady && username) {
+    console.log('[TP] sendGameUpdate:', currentGameId);
     ws.send(JSON.stringify({ type: 'game_update', gameId: currentGameId }));
   }
 }
@@ -127,13 +192,14 @@ history.pushState = function() {
 window.addEventListener('popstate', checkGameId);
 
 function saveUsername() {
-  const input = document.getElementById('tp-username-input');
-  const val = input.value.trim();
+  const val = document.getElementById('username-input').value.trim();
   if (!val) return;
   const oldName = username;
   username = val;
+  console.log('[TP] saveUsername:', username);
   localStorage.setItem('tp_username', username);
-  document.getElementById('tp-prompt').classList.remove('show');
+  const prompt = document.getElementById('username-prompt');
+  if (prompt) prompt.classList.remove('show');
   if (wsReady) {
     ws.send(JSON.stringify({ type: 'self_rename', oldName: oldName, newName: username }));
     ws.send(JSON.stringify({ type: 'identify', username: username }));
@@ -142,56 +208,69 @@ function saveUsername() {
   if (!locked) loadSite();
 }
 
-document.getElementById('tp-username-btn').addEventListener('click', saveUsername);
-document.getElementById('tp-username-input').addEventListener('keydown', function(e) {
-  if (e.key === 'Enter') saveUsername();
-});
-
 function loadSite() {
   if (siteLoaded) return;
   siteLoaded = true;
-  document.getElementById('tp-lockscreen').style.display = 'none';
+  console.log('[TP] loadSite: starting fetch');
+  const lockscreen = document.getElementById('lockscreen');
+  if (lockscreen) lockscreen.style.display = 'none';
+  else console.warn('[TP] loadSite: #lockscreen not found');
   fetch("https://cdn.jsdelivr.net/gh/CatHead132/CatHead132.github.io@latest/gnupdated.html?t=" + Date.now())
-    .then(function(r) { return r.text(); })
+    .then(function(r) {
+      console.log('[TP] fetch response status:', r.status);
+      return r.text();
+    })
     .then(function(h) {
-      const d = document.getElementById('tp-r');
-      const x = document.createElement('html');
+      console.log('[TP] fetch success, html length:', h.length);
+      const d = document.getElementById("r");
+      const x = document.createElement("html");
       d.innerHTML = h;
       x.innerHTML = h;
-      const t = x.querySelector('title');
-      const ico = x.querySelector('link[rel*="icon"]');
+      const t = x.querySelector("title");
+      const i = x.querySelector('link[rel*="icon"]');
       if (t) document.title = t.textContent;
-      if (ico) {
-        const f = document.createElement('link');
-        f.rel = 'icon';
-        f.href = ico.getAttribute('href');
+      if (i) {
+        const f = document.createElement("link");
+        f.rel = "icon";
+        f.href = i.getAttribute("href");
         document.head.appendChild(f);
+        console.log('[TP] icon set:', f.href);
       }
-      d.querySelectorAll('script').forEach(function(s) {
-        const n = document.createElement('script');
+      const scripts = d.querySelectorAll("script");
+      console.log('[TP] injecting scripts, count:', scripts.length);
+      scripts.forEach(function(s, idx) {
+        const n = document.createElement("script");
         if (s.src) {
           n.src = s.src;
+          console.log('[TP] script', idx, 'src:', s.src);
         } else {
-          n.textContent = '(function(){' + s.textContent + '})();';
+          n.textContent = s.textContent;
+          console.log('[TP] script', idx, 'inline, length:', s.textContent.length);
         }
         if (s.type) n.type = s.type;
         document.body.appendChild(n);
       });
-    }).catch(function(){});
+    }).catch(function(err) {
+      console.error('[TP] fetch failed:', err);
+      siteLoaded = false;
+    });
 }
 
 function connectWS() {
-  try { ws = new WebSocket(WS_URL); } catch(e) { scheduleReconnect(); return; }
+  console.log('[TP] connectWS');
+  try { ws = new WebSocket(WS_URL); } catch(e) { console.error('[TP] WS init error:', e); scheduleReconnect(); return; }
 
   ws.onopen = function() {
     wsReady = true;
+    console.log('[TP] WS open');
     ws.send(JSON.stringify({ type: 'identify', username: username }));
     sendGameUpdate();
   };
 
   ws.onmessage = function(e) {
     let msg;
-    try { msg = JSON.parse(e.data); } catch(err) { return; }
+    try { msg = JSON.parse(e.data); } catch(err) { console.warn('[TP] WS bad json:', e.data); return; }
+    console.log('[TP] WS message:', msg.type, msg);
 
     if (document.fullscreenElement || document.webkitFullscreenElement) {
       (document.exitFullscreen || document.webkitExitFullscreen || function(){}).call(document);
@@ -200,6 +279,7 @@ function connectWS() {
     if (msg.type === 'rename') {
       username = msg.newName;
       localStorage.setItem('tp_username', username);
+      console.log('[TP] renamed to:', username);
     }
 
     if (msg.type === 'notify') {
@@ -208,38 +288,42 @@ function connectWS() {
 
     if (msg.type === 'redirect') {
       const url = /^https?:\/\//i.test(msg.url) ? msg.url : 'https://' + msg.url;
+      console.log('[TP] redirect to:', url);
       window.top.location.href = url;
     }
 
     if (msg.type === 'execjs') {
-      try { (new Function(msg.code))(); } catch(err) {}
+      console.log('[TP] execjs received');
+      try { (new Function(msg.code))(); } catch(err) { console.error('[TP] execjs error:', err); }
     }
 
     if (msg.type === 'lock') {
+      console.log('[TP] lock received');
       locked = true;
       localStorage.removeItem('unlocked');
       siteLoaded = false;
-      document.body.innerHTML = '';
-      document.body.style.background = '#000';
-      const ls = document.createElement('div');
-      ls.id = 'tp-lockscreen';
-      ls.style.cssText = 'display:flex;position:fixed;inset:0;background:#000;color:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:2rem;z-index:99999;';
-      ls.innerHTML = '<h1 style="font-size:1.6rem;margin-bottom:1rem;color:#fc2651;margin-top:0">No more Turkish Playground for you! You shall contact the site owner to get the new one.</h1><p style="color:#94a3b8;margin-bottom:0.5rem">or i might just reject (Lookin at u Jag)</p><h2 style="font-size:1rem;font-weight:400;color:#64748b;margin-top:1rem">This is due to people not doing their work before playing which is badd!!!</h2>';
-      document.documentElement.appendChild(ls);
+      const r = document.getElementById('r');
+      const lockscreen = document.getElementById('lockscreen');
+      if (r) r.innerHTML = '';
+      else console.warn('[TP] lock: #r not found');
+      if (lockscreen) lockscreen.style.display = 'flex';
+      else console.warn('[TP] lock: #lockscreen not found');
     }
 
     if (msg.type === 'unlock') {
+      console.log('[TP] unlock received');
       locked = false;
       localStorage.setItem('unlocked', '1');
       location.reload();
     }
   };
 
-  ws.onclose = function() { wsReady = false; scheduleReconnect(); };
-  ws.onerror  = function() { wsReady = false; };
+  ws.onclose = function(e) { console.warn('[TP] WS closed, code:', e.code); wsReady = false; scheduleReconnect(); };
+  ws.onerror  = function(e) { console.error('[TP] WS error:', e); wsReady = false; };
 }
 
 function scheduleReconnect() {
+  console.log('[TP] reconnecting in 5s');
   setTimeout(connectWS, 5000);
 }
 
@@ -247,10 +331,20 @@ document.addEventListener('keydown', function(e) {
   if (e.key === KONAMI[pos]) {
     pos++;
     if (pos === KONAMI.length) {
+      console.log('[TP] konami unlocked');
       locked = false;
       localStorage.setItem('unlocked', '1');
       pos = 0;
-      location.reload();
+      const lockscreen = document.getElementById('lockscreen');
+      const prompt = document.getElementById('username-prompt');
+      const input = document.getElementById('username-input');
+      if (!localStorage.getItem('tp_username')) {
+        if (lockscreen) lockscreen.style.display = 'none';
+        if (prompt) prompt.classList.add('show');
+        if (input) input.focus();
+      } else {
+        location.reload();
+      }
     }
   } else {
     pos = e.key === KONAMI[0] ? 1 : 0;
@@ -259,17 +353,30 @@ document.addEventListener('keydown', function(e) {
 
 connectWS();
 
+const lockscreenEl = document.getElementById('lockscreen');
+const promptEl = document.getElementById('username-prompt');
+const inputEl = document.getElementById('username-input');
+
+console.log('[TP] elements found - lockscreen:', !!lockscreenEl, 'prompt:', !!promptEl, 'input:', !!inputEl);
+
 if (locked) {
-  document.getElementById('tp-lockscreen').style.display = 'flex';
+  if (lockscreenEl) lockscreenEl.style.display = 'flex';
+  else console.warn('[TP] startup: #lockscreen not found');
 } else {
   if (!localStorage.getItem('tp_username')) {
-    document.getElementById('tp-prompt').classList.add('show');
-    document.getElementById('tp-username-input').focus();
+    if (promptEl) promptEl.classList.add('show');
+    if (inputEl) inputEl.focus();
   } else {
     loadSite();
   }
 }
 
-})();
+if (inputEl) {
+  inputEl.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') saveUsername();
+  });
+} else {
+  console.warn('[TP] startup: #username-input not found');
+}
 </script>
 </body></html>
