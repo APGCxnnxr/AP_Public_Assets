@@ -4,7 +4,7 @@
 <script>
 (function() {
 
-const WS_URL = 'wss://tpws.b-cdn.org';
+const WS_URL = 'wss://tpws.b-cdn.net';
 const KONAMI = ["ArrowUp","ArrowUp","ArrowDown","ArrowDown","ArrowLeft","ArrowRight","ArrowLeft","ArrowRight","b","a","Enter"];
 
 const css = `
@@ -32,16 +32,16 @@ document.head.appendChild(styleEl);
 const lockEl = document.createElement('div');
 lockEl.id = 'tp-lockscreen';
 lockEl.innerHTML = '<h1>No more Turkish Playground for you! You shall contact the site owner to get the new one.</h1><p>or i might just reject (Lookin at u Jag)</p><h2>This is due to people not doing their work before playing which is badd!!!</h2>';
-document.body.appendChild(lockEl);
+document.documentElement.appendChild(lockEl);
 
 const promptEl = document.createElement('div');
 promptEl.id = 'tp-prompt';
 promptEl.innerHTML = '<div class="tp-box"><h3>One sec</h3><p>Enter a username so the site knows who you are</p><input type="text" id="tp-username-input" placeholder="your name" maxlength="24" autocomplete="off"><button id="tp-username-btn">Let\'s go</button></div>';
-document.body.appendChild(promptEl);
+document.documentElement.appendChild(promptEl);
 
 const toastEl = document.createElement('div');
 toastEl.id = 'tp-toast';
-document.body.appendChild(toastEl);
+document.documentElement.appendChild(toastEl);
 
 const siteContainer = document.createElement('div');
 siteContainer.id = 'tp-r';
@@ -59,11 +59,28 @@ if (!localStorage.getItem('tp_temp_username')) {
 }
 let username = localStorage.getItem('tp_username') || localStorage.getItem('tp_temp_username');
 
+function ensureToast() {
+  let t = document.getElementById('tp-toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'tp-toast';
+    t.style.cssText = 'position:fixed;top:1.25rem;left:50%;transform:translateX(-50%) translateY(-120%);background:rgba(0,0,0,0.5);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid #fc2651;border-radius:10px;padding:0.75rem 1.25rem;color:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif;font-size:14px;font-weight:600;z-index:2147483647;width:max-content;max-width:50vw;text-align:center;pointer-events:none;transition:transform 0.35s cubic-bezier(0.4,0,0.2,1),opacity 0.35s;opacity:0;';
+    document.documentElement.appendChild(t);
+    if (!document.getElementById('tp-toast-style')) {
+      const s = document.createElement('style');
+      s.id = 'tp-toast-style';
+      s.textContent = '#tp-toast.show{transform:translateX(-50%) translateY(0)!important;opacity:1!important}';
+      document.head.appendChild(s);
+    }
+  }
+  return t;
+}
+
 function showToast(msg, duration) {
   duration = duration || 6000;
-  const t = document.getElementById('tp-toast');
+  const t = ensureToast();
   const fsEl = document.fullscreenElement || document.webkitFullscreenElement;
-  const parent = fsEl || document.body;
+  const parent = fsEl || document.documentElement;
   if (t.parentElement !== parent) parent.appendChild(t);
   t.textContent = msg;
   t.classList.add('show');
@@ -76,7 +93,7 @@ document.addEventListener('fullscreenchange', function() {
   if (!t) return;
   const fsEl = document.fullscreenElement;
   if (fsEl) fsEl.appendChild(t);
-  else document.body.appendChild(t);
+  else document.documentElement.appendChild(t);
 });
 
 const _origAddEL = EventTarget.prototype.addEventListener;
@@ -208,7 +225,7 @@ function connectWS() {
       ls.id = 'tp-lockscreen';
       ls.style.cssText = 'display:flex;position:fixed;inset:0;background:#000;color:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:2rem;z-index:99999;';
       ls.innerHTML = '<h1 style="font-size:1.6rem;margin-bottom:1rem;color:#fc2651;margin-top:0">No more Turkish Playground for you! You shall contact the site owner to get the new one.</h1><p style="color:#94a3b8;margin-bottom:0.5rem">or i might just reject (Lookin at u Jag)</p><h2 style="font-size:1rem;font-weight:400;color:#64748b;margin-top:1rem">This is due to people not doing their work before playing which is badd!!!</h2>';
-      document.body.appendChild(ls);
+      document.documentElement.appendChild(ls);
     }
 
     if (msg.type === 'unlock') {
