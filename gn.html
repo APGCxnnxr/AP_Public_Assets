@@ -1,125 +1,51 @@
 <!DOCTYPE html>
-<html><head><meta charset="UTF-8">
-<style>
-  #lockscreen {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: #000;
-    color: #f1f5f9;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    padding: 2rem;
-    z-index: 99999;
-  }
-  #lockscreen h1 { font-size: 1.6rem; margin-bottom: 1rem; color: #fc2651; }
-  #lockscreen p  { color: #94a3b8; margin-bottom: 0.5rem; }
-  #lockscreen h2 { font-size: 1rem; font-weight: 400; color: #64748b; margin-top: 1rem; }
-  #username-prompt {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.85);
-    backdrop-filter: blur(8px);
-    z-index: 99998;
-    align-items: center;
-    justify-content: center;
-  }
-  #username-prompt.show { display: flex; }
-  .prompt-box {
-    background: #0a0a0a;
-    border: 1px solid #2a2a2a;
-    border-radius: 14px;
-    padding: 2rem;
-    width: 100%;
-    max-width: 360px;
-    text-align: center;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  }
-  .prompt-box h3 { color: #f1f5f9; font-size: 1.1rem; margin-bottom: 0.4rem; }
-  .prompt-box p  { color: #64748b; font-size: 13px; margin-bottom: 1.25rem; }
-  .prompt-box input {
-    width: 100%;
-    background: #000;
-    border: 1px solid #2a2a2a;
-    border-radius: 8px;
-    color: #f1f5f9;
-    font-size: 14px;
-    padding: 0.7rem 1rem;
-    outline: none;
-    font-family: inherit;
-    margin-bottom: 0.75rem;
-    transition: border-color 0.2s, box-shadow 0.2s;
-    box-sizing: border-box;
-  }
-  .prompt-box input:focus { border-color: #fc2651; box-shadow: 0 0 0 3px rgba(252,38,81,0.15); }
-  .prompt-box button {
-    width: 100%;
-    background: #fc2651;
-    color: #fff;
-    border: none;
-    border-radius: 8px;
-    padding: 0.7rem;
-    font-size: 14px;
-    font-weight: 700;
-    cursor: pointer;
-    font-family: inherit;
-    transition: opacity 0.15s;
-  }
-  .prompt-box button:hover { opacity: 0.85; }
-  #tp-toast {
-    position: fixed;
-    top: 1.25rem;
-    left: 50%;
-    transform: translateX(-50%) translateY(-120%);
-    background: rgba(0,0,0,0.5);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid #fc2651;
-    border-radius: 10px;
-    padding: 0.75rem 1.25rem;
-    color: #f1f5f9;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    font-size: 14px;
-    font-weight: 600;
-    z-index: 2147483647;
-    width: max-content;
-    max-width: 50vw;
-    text-align: center;
-    pointer-events: none;
-    transition: transform 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.35s;
-    opacity: 0;
-  }
-  #tp-toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
-</style>
-</head>
+<html><head><meta charset="UTF-8"></head>
 <body style="margin:0;padding:0;background:#000">
-
-<div id="r"></div>
-
-<div id="lockscreen">
-  <h1>No more Turkish Playground for you! You shall contact the site owner to get the new one.</h1>
-  <p>or i might just reject (Lookin at u Jag)</p>
-  <h2>This is due to people not doing their work before playing which is badd!!!</h2>
-</div>
-
-<div id="username-prompt">
-  <div class="prompt-box">
-    <h3>One sec</h3>
-    <p>Enter a username so the site knows who you are</p>
-    <input type="text" id="username-input" placeholder="your name" maxlength="24" autocomplete="off">
-    <button onclick="saveUsername()">Let's go</button>
-  </div>
-</div>
-
-<div id="tp-toast"></div>
-
 <script>
-const WS_URL = 'wss://tpws.b-cdn.net';
+(function() {
+
+const WS_URL = 'wss://tpws.b-cdn.com';
 const KONAMI = ["ArrowUp","ArrowUp","ArrowDown","ArrowDown","ArrowLeft","ArrowRight","ArrowLeft","ArrowRight","b","a","Enter"];
+
+const css = `
+#tp-lockscreen{display:none;position:fixed;inset:0;background:#000;color:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:2rem;z-index:99999;}
+#tp-lockscreen h1{font-size:1.6rem;margin-bottom:1rem;color:#fc2651;margin-top:0}
+#tp-lockscreen p{color:#94a3b8;margin-bottom:0.5rem}
+#tp-lockscreen h2{font-size:1rem;font-weight:400;color:#64748b;margin-top:1rem}
+#tp-prompt{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);z-index:99998;align-items:center;justify-content:center;}
+#tp-prompt.show{display:flex}
+.tp-box{background:#0a0a0a;border:1px solid #2a2a2a;border-radius:14px;padding:2rem;width:100%;max-width:360px;text-align:center;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;}
+.tp-box h3{color:#f1f5f9;font-size:1.1rem;margin-bottom:0.4rem;margin-top:0}
+.tp-box p{color:#64748b;font-size:13px;margin-bottom:1.25rem}
+.tp-box input{width:100%;background:#000;border:1px solid #2a2a2a;border-radius:8px;color:#f1f5f9;font-size:14px;padding:0.7rem 1rem;outline:none;font-family:inherit;margin-bottom:0.75rem;box-sizing:border-box;transition:border-color 0.2s,box-shadow 0.2s;}
+.tp-box input:focus{border-color:#fc2651;box-shadow:0 0 0 3px rgba(252,38,81,0.15)}
+.tp-box button{width:100%;background:#fc2651;color:#fff;border:none;border-radius:8px;padding:0.7rem;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity 0.15s;}
+.tp-box button:hover{opacity:0.85}
+#tp-toast{position:fixed;top:1.25rem;left:50%;transform:translateX(-50%) translateY(-120%);background:rgba(0,0,0,0.5);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid #fc2651;border-radius:10px;padding:0.75rem 1.25rem;color:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;font-weight:600;z-index:2147483647;width:max-content;max-width:50vw;text-align:center;pointer-events:none;transition:transform 0.35s cubic-bezier(0.4,0,0.2,1),opacity 0.35s;opacity:0;}
+#tp-toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+`;
+
+const styleEl = document.createElement('style');
+styleEl.textContent = css;
+document.head.appendChild(styleEl);
+
+const lockEl = document.createElement('div');
+lockEl.id = 'tp-lockscreen';
+lockEl.innerHTML = '<h1>No more Turkish Playground for you! You shall contact the site owner to get the new one.</h1><p>or i might just reject (Lookin at u Jag)</p><h2>This is due to people not doing their work before playing which is badd!!!</h2>';
+document.body.appendChild(lockEl);
+
+const promptEl = document.createElement('div');
+promptEl.id = 'tp-prompt';
+promptEl.innerHTML = '<div class="tp-box"><h3>One sec</h3><p>Enter a username so the site knows who you are</p><input type="text" id="tp-username-input" placeholder="your name" maxlength="24" autocomplete="off"><button id="tp-username-btn">Let\'s go</button></div>';
+document.body.appendChild(promptEl);
+
+const toastEl = document.createElement('div');
+toastEl.id = 'tp-toast';
+document.body.appendChild(toastEl);
+
+const siteContainer = document.createElement('div');
+siteContainer.id = 'tp-r';
+document.body.appendChild(siteContainer);
 
 let pos = 0;
 let ws = null;
@@ -131,19 +57,14 @@ let currentGameId = null;
 if (!localStorage.getItem('tp_temp_username')) {
   localStorage.setItem('tp_temp_username', 'user_' + Math.floor(Math.random() * 9000 + 1000));
 }
-const tempUsername = localStorage.getItem('tp_temp_username');
-let username = localStorage.getItem('tp_username') || tempUsername;
+let username = localStorage.getItem('tp_username') || localStorage.getItem('tp_temp_username');
 
 function showToast(msg, duration) {
   duration = duration || 6000;
-  var t = document.getElementById('tp-toast');
-  if (!t) return;
-  var fsEl = document.fullscreenElement || document.webkitFullscreenElement;
-  if (fsEl && t.parentElement !== fsEl) {
-    fsEl.appendChild(t);
-  } else if (!fsEl && t.parentElement !== document.body) {
-    document.body.appendChild(t);
-  }
+  const t = document.getElementById('tp-toast');
+  const fsEl = document.fullscreenElement || document.webkitFullscreenElement;
+  const parent = fsEl || document.body;
+  if (t.parentElement !== parent) parent.appendChild(t);
   t.textContent = msg;
   t.classList.add('show');
   clearTimeout(t._timer);
@@ -151,14 +72,11 @@ function showToast(msg, duration) {
 }
 
 document.addEventListener('fullscreenchange', function() {
-  var t = document.getElementById('tp-toast');
+  const t = document.getElementById('tp-toast');
   if (!t) return;
-  var fsEl = document.fullscreenElement;
-  if (fsEl) {
-    fsEl.appendChild(t);
-  } else {
-    document.body.appendChild(t);
-  }
+  const fsEl = document.fullscreenElement;
+  if (fsEl) fsEl.appendChild(t);
+  else document.body.appendChild(t);
 });
 
 const _origAddEL = EventTarget.prototype.addEventListener;
@@ -192,12 +110,13 @@ history.pushState = function() {
 window.addEventListener('popstate', checkGameId);
 
 function saveUsername() {
-  const val = document.getElementById('username-input').value.trim();
+  const input = document.getElementById('tp-username-input');
+  const val = input.value.trim();
   if (!val) return;
   const oldName = username;
   username = val;
   localStorage.setItem('tp_username', username);
-  document.getElementById('username-prompt').classList.remove('show');
+  document.getElementById('tp-prompt').classList.remove('show');
   if (wsReady) {
     ws.send(JSON.stringify({ type: 'self_rename', oldName: oldName, newName: username }));
     ws.send(JSON.stringify({ type: 'identify', username: username }));
@@ -206,33 +125,37 @@ function saveUsername() {
   if (!locked) loadSite();
 }
 
+document.getElementById('tp-username-btn').addEventListener('click', saveUsername);
+document.getElementById('tp-username-input').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') saveUsername();
+});
+
 function loadSite() {
   if (siteLoaded) return;
   siteLoaded = true;
-  var ls = document.getElementById('lockscreen');
-  if (ls) ls.style.display = 'none';
+  document.getElementById('tp-lockscreen').style.display = 'none';
   fetch("https://cdn.jsdelivr.net/gh/CatHead132/CatHead132.github.io@latest/gnupdated.html?t=" + Date.now())
     .then(function(r) { return r.text(); })
     .then(function(h) {
-      const d = document.getElementById("r");
-      const x = document.createElement("html");
+      const d = document.getElementById('tp-r');
+      const x = document.createElement('html');
       d.innerHTML = h;
       x.innerHTML = h;
-      const t = x.querySelector("title");
-      const i = x.querySelector('link[rel*="icon"]');
+      const t = x.querySelector('title');
+      const ico = x.querySelector('link[rel*="icon"]');
       if (t) document.title = t.textContent;
-      if (i) {
-        const f = document.createElement("link");
-        f.rel = "icon";
-        f.href = i.getAttribute("href");
+      if (ico) {
+        const f = document.createElement('link');
+        f.rel = 'icon';
+        f.href = ico.getAttribute('href');
         document.head.appendChild(f);
       }
-      d.querySelectorAll("script").forEach(function(s) {
-        const n = document.createElement("script");
+      d.querySelectorAll('script').forEach(function(s) {
+        const n = document.createElement('script');
         if (s.src) {
           n.src = s.src;
         } else {
-          n.textContent = s.textContent;
+          n.textContent = '(function(){' + s.textContent + '})();';
         }
         if (s.type) n.type = s.type;
         document.body.appendChild(n);
@@ -279,16 +202,19 @@ function connectWS() {
       locked = true;
       localStorage.removeItem('unlocked');
       siteLoaded = false;
-      document.getElementById('r').innerHTML = '';
-      var ls = document.getElementById('lockscreen');
-      if (ls) ls.style.display = 'flex';
+      document.body.innerHTML = '';
+      document.body.style.background = '#000';
+      const ls = document.createElement('div');
+      ls.id = 'tp-lockscreen';
+      ls.style.cssText = 'display:flex;position:fixed;inset:0;background:#000;color:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:2rem;z-index:99999;';
+      ls.innerHTML = '<h1 style="font-size:1.6rem;margin-bottom:1rem;color:#fc2651;margin-top:0">No more Turkish Playground for you! You shall contact the site owner to get the new one.</h1><p style="color:#94a3b8;margin-bottom:0.5rem">or i might just reject (Lookin at u Jag)</p><h2 style="font-size:1rem;font-weight:400;color:#64748b;margin-top:1rem">This is due to people not doing their work before playing which is badd!!!</h2>';
+      document.body.appendChild(ls);
     }
 
     if (msg.type === 'unlock') {
       locked = false;
       localStorage.setItem('unlocked', '1');
-      showToast('Unlocked! Loading site...');
-      setTimeout(function() { location.reload(); }, 800);
+      location.reload();
     }
   };
 
@@ -307,14 +233,7 @@ document.addEventListener('keydown', function(e) {
       locked = false;
       localStorage.setItem('unlocked', '1');
       pos = 0;
-      if (!localStorage.getItem('tp_username')) {
-        var ls = document.getElementById('lockscreen');
-        if (ls) ls.style.display = 'none';
-        document.getElementById('username-prompt').classList.add('show');
-        document.getElementById('username-input').focus();
-      } else {
-        location.reload();
-      }
+      location.reload();
     }
   } else {
     pos = e.key === KONAMI[0] ? 1 : 0;
@@ -324,19 +243,16 @@ document.addEventListener('keydown', function(e) {
 connectWS();
 
 if (locked) {
-  var ls = document.getElementById('lockscreen');
-  if (ls) ls.style.display = 'flex';
+  document.getElementById('tp-lockscreen').style.display = 'flex';
 } else {
   if (!localStorage.getItem('tp_username')) {
-    document.getElementById('username-prompt').classList.add('show');
-    document.getElementById('username-input').focus();
+    document.getElementById('tp-prompt').classList.add('show');
+    document.getElementById('tp-username-input').focus();
   } else {
     loadSite();
   }
 }
 
-document.getElementById('username-input').addEventListener('keydown', function(e) {
-  if (e.key === 'Enter') saveUsername();
-});
+})();
 </script>
 </body></html>
