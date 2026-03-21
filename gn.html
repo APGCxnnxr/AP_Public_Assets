@@ -69,30 +69,6 @@
     transition: opacity 0.15s;
   }
   .prompt-box button:hover { opacity: 0.85; }
-  #tp-toast {
-    position: fixed;
-    top: 1.25rem;
-    left: 50%;
-    transform: translateX(-50%) translateY(-120%);
-    background: rgba(0,0,0,0.5);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid #fc2651;
-    border-radius: 10px;
-    padding: 0.75rem 1.25rem;
-    color: #f1f5f9;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    font-size: 14px;
-    font-weight: 600;
-    z-index: 2147483647;
-    width: max-content;
-    max-width: 50vw;
-    text-align: center;
-    pointer-events: none;
-    transition: transform 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.35s;
-    opacity: 0;
-  }
-  #tp-toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
 </style>
 </head>
 <body style="margin:0;padding:0;background:#000">
@@ -114,7 +90,30 @@
   </div>
 </div>
 
-<div id="tp-toast"></div>
+<div id="tp-toast" style="
+  position: fixed !important;
+  top: 1.25rem !important;
+  left: 50% !important;
+  transform: translateX(-50%) translateY(-120%) !important;
+  background: rgba(0,0,0,0.5) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border: 1px solid #fc2651 !important;
+  border-radius: 10px !important;
+  padding: 0.75rem 1.25rem !important;
+  color: #f1f5f9 !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  z-index: 2147483647 !important;
+  width: max-content !important;
+  max-width: 50vw !important;
+  text-align: center !important;
+  pointer-events: none !important;
+  transition: transform 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.35s !important;
+  opacity: 0 !important;
+  display: block !important;
+"></div>
 
 <script>
 const WS_URL = 'wss://tpws.b-cdn.net';
@@ -146,14 +145,18 @@ function showToast(msg, duration) {
   const parent = fsEl || document.body;
   if (t.parentElement !== parent) parent.appendChild(t);
   t.textContent = msg;
-  t.classList.add('show');
+  t.style.setProperty('opacity', '1', 'important');
+  t.style.setProperty('transform', 'translateX(-50%) translateY(0)', 'important');
   clearTimeout(t._timer);
-  t._timer = setTimeout(function() { t.classList.remove('show'); }, duration);
+  t._timer = setTimeout(function() {
+    t.style.setProperty('opacity', '0', 'important');
+    t.style.setProperty('transform', 'translateX(-50%) translateY(-120%)', 'important');
+  }, duration);
 }
 
 document.addEventListener('fullscreenchange', function() {
   const t = document.getElementById('tp-toast');
-  if (!t) { console.warn('[TP] fullscreenchange: #tp-toast not found'); return; }
+  if (!t) return;
   const fsEl = document.fullscreenElement;
   if (fsEl) fsEl.appendChild(t);
   else document.body.appendChild(t);
@@ -310,16 +313,10 @@ function connectWS() {
     }
 
     if (msg.type === 'lock') {
-      console.log('[TP] lock received');
+      console.log('[TP] lock received, reloading');
       locked = true;
       localStorage.removeItem('unlocked');
-      siteLoaded = false;
-      const r = document.getElementById('r');
-      const lockscreen = document.getElementById('lockscreen');
-      if (r) r.innerHTML = '';
-      else console.warn('[TP] lock: #r not found');
-      if (lockscreen) lockscreen.style.display = 'flex';
-      else console.warn('[TP] lock: #lockscreen not found');
+      location.reload();
     }
 
     if (msg.type === 'unlock') {
