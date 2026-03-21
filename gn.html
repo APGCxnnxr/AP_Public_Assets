@@ -277,7 +277,7 @@ function connectWS() {
 
   ws.onopen = function() {
     wsReady = true;
-    ws.send(JSON.stringify({ type: 'identify', username: username }));
+    ws.send(JSON.stringify({ type: 'identify', username: username, locked: locked }));
     sendGameUpdate();
   };
 
