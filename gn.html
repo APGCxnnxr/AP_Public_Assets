@@ -234,6 +234,12 @@ function loadSite() {
       const x = document.createElement("html");
       d.innerHTML = h;
       x.innerHTML = h;
+
+      ['#lockscreen', '#username-prompt', '#tp-toast'].forEach(function(sel) {
+        const el = d.querySelector(sel);
+        if (el) { console.log('[TP] stripped duplicate', sel, 'from fetched html'); el.remove(); }
+      });
+
       const t = x.querySelector("title");
       const i = x.querySelector('link[rel*="icon"]');
       if (t) document.title = t.textContent;
