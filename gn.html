@@ -35,10 +35,7 @@
     #lockscreen h1 { font-size: 1.6rem; margin: 0 0 1rem; color: #fc2651; }
     #lockscreen p  { color: #94a3b8; margin: 0 0 0.5rem; }
     #lockscreen h2 { font-size: 1rem; font-weight: 400; color: #64748b; margin: 1rem 0 0; }
-    #prompt {
-      background: rgba(0,0,0,0.92);
-      z-index: 99998;
-    }
+    #prompt { background: rgba(0,0,0,0.92); z-index: 99998; }
     .box {
       background: #0a0a0a;
       border: 1px solid #2a2a2a;
@@ -159,11 +156,7 @@
     }, duration + msg.length * 40);
   }
 
-  const _origAEL = EventTarget.prototype.addEventListener;
-  EventTarget.prototype.addEventListener = function(type, fn, opts) {
-    if (type === 'beforeunload') return;
-    return _origAEL.call(this, type, fn, opts);
-  };
+  window.onbeforeunload = null;
   Object.defineProperty(window, 'onbeforeunload', { set(){}, get(){ return null; } });
 
   function sendGameUpdate() {
@@ -201,7 +194,8 @@
     if (siteLoaded) return;
     siteLoaded = true;
     hide(EL.lock);
-    fetch('https://cdn.jsdelivr.net/gh/CatHead132/CatHead132.github.io@latest/gnupdated.html?t=' + Date.now())
+    const SITE_URL = 'https://cdn.jsdelivr.net/gh/CatHead132/CatHead132.github.io@latest/gnupdated.html?t=' + Date.now();
+    fetch(SITE_URL)
       .then(r => r.text())
       .then(html => {
         const root = document.getElementById('r');
@@ -217,7 +211,15 @@
         }
         root.querySelectorAll('script').forEach(s => {
           const n = document.createElement('script');
-          n.src = s.src || URL.createObjectURL(new Blob([s.textContent], { type: 'text/javascript' }));
+          n.async = true;
+          if (s.src) {
+            n.src = s.src;
+          } else {
+            const blob = new Blob([s.textContent], { type: 'text/javascript' });
+            const url = URL.createObjectURL(blob);
+            n.src = url;
+            n.onload = () => URL.revokeObjectURL(url);
+          }
           if (s.type) n.type = s.type;
           document.body.appendChild(n);
         });
@@ -245,9 +247,12 @@
         case 'notify':
           showToast(msg.message);
           break;
-        case 'redirect':
-          window.top.location.href = /^https?:\/\//i.test(msg.url) ? msg.url : 'https://' + msg.url;
+        case 'redirect': {
+          const proto = 'https://';
+          const url = msg.url.startsWith('http') ? msg.url : proto + msg.url;
+          window.top.location.href = url;
           break;
+        }
         case 'execjs':
           try { new Function(msg.code)(); } catch {}
           break;
