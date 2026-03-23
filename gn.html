@@ -30,9 +30,8 @@
     .box button{width:100%;background:#fc2651;color:#fff;border:none;border-radius:8px;padding:.7rem;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit}
   </style>
   <div id="lockscreen">
-    <h1>No more Turkish Playground for you! Contact the site owner to get the new one.</h1>
-    <p>or i might just reject (Lookin at u Jag)</p>
-    <h2>This is due to people not doing their work before playing which is badd!!!</h2>
+    <h1>Roses are red,<br>Violets are blue,<br>You've been banned<br>From Turkish Playground too.</h1>
+    <p>U may still contact the Turkish Guy for a appeal</p>
   </div>
   <div id="prompt">
     <div class="box">
@@ -82,20 +81,49 @@
       Object.assign(t.style, {
         position: 'fixed', top: '1.25rem', left: '50%',
         transform: 'translateX(-50%)', zIndex: 2147483647,
-        pointerEvents: 'none',
+        pointerEvents: 'none', display: 'flex',
+        flexDirection: 'column', alignItems: 'center', gap: '.5rem',
       });
       document.body.appendChild(t);
     }
+
+    const existing = Array.from(t.children);
+    const before = existing.map(el => el.getBoundingClientRect().top);
+
     const d = document.createElement('div');
     Object.assign(d.style, {
       background: '#000', border: '1px solid #fc2651',
       borderRadius: '8px', padding: '.75rem 1.25rem', color: '#f1f5f9',
-      fontFamily: 'sans-serif', fontSize: '14px', marginBottom: '.5rem',
+      fontFamily: 'sans-serif', fontSize: '14px',
       textAlign: 'center', maxWidth: '55vw', wordBreak: 'break-word',
+      opacity: '0', transform: 'translateY(-8px)',
+      transition: 'opacity 0.25s ease, transform 0.25s ease',
     });
     d.textContent = msg;
     t.prepend(d);
-    setTimeout(() => d.remove(), 6000);
+
+    existing.forEach((el, i) => {
+      const after = el.getBoundingClientRect().top;
+      const delta = before[i] - after;
+      if (delta === 0) return;
+      el.style.transition = 'none';
+      el.style.transform = `translateY(${delta}px)`;
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        el.style.transition = 'opacity 0.25s ease, transform 0.25s ease';
+        el.style.transform = 'translateY(0)';
+      }));
+    });
+
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      d.style.opacity = '1';
+      d.style.transform = 'translateY(0)';
+    }));
+
+    setTimeout(() => {
+      d.style.opacity = '0';
+      d.style.transform = 'translateY(-8px)';
+      setTimeout(() => d.remove(), 250);
+    }, 6000);
   }
 
   function sendGameUpdate() {
