@@ -9,7 +9,11 @@
 <div id="tp-ui"></div>
 <script>
 (() => {
-  const WS_URL = 'wss://tpws.b-cdn.net';
+  let WS_URL = null;
+  fetch('https://cdn.jsdelivr.net/gh/CatHead132/CatHead132.github.io@main/lock.txt?t=' + Date.now())
+  .then(r => r.text())
+  .then(txt => { WS_URL = 'wss://' + txt.trim(); connectWS(); });
+  
   const KONAMI = ['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight','b','a','Enter'];
   const LS = localStorage;
 
@@ -249,8 +253,6 @@
       konamiPos = e.key === KONAMI[0] ? 1 : 0;
     }
   });
-
-  connectWS();
 
   if (locked) {
     show(EL.lock);
