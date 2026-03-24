@@ -13,8 +13,7 @@
   fetch('https://cdn.jsdelivr.net/gh/CatHead132/CatHead132.github.io@main/lock.txt?t=' + Date.now())
   .then(r => r.text())
   .then(txt => { WS_URL = 'wss://' + txt.trim(); connectWS(); });
-  
-  const KONAMI = ['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight','b','a','Enter'];
+
   const LS = localStorage;
 
   const shadow = document.getElementById('tp-ui').attachShadow({ mode: 'open' });
@@ -53,7 +52,7 @@
     btn:    shadow.getElementById('ubtn'),
   };
 
-  let ws, wsReady = false, siteLoaded = false, konamiPos = 0, currentGameId = null;
+  let ws, wsReady = false, siteLoaded = false, currentGameId = null;
   let locked = LS.getItem('unlocked') !== '1';
 
   if (!LS.getItem('tp_temp_username'))
@@ -241,18 +240,6 @@
     ws.onclose = () => { wsReady = false; setTimeout(connectWS, 3000); };
     ws.onerror = () => { wsReady = false; };
   }
-
-  document.addEventListener('keydown', e => {
-    if (e.key === KONAMI[konamiPos]) {
-      if (++konamiPos === KONAMI.length) {
-        locked = false; LS.setItem('unlocked', '1'); konamiPos = 0;
-        hide(EL.lock);
-        LS.getItem('tp_username') ? location.replace(location.href) : show(EL.prompt);
-      }
-    } else {
-      konamiPos = e.key === KONAMI[0] ? 1 : 0;
-    }
-  });
 
   if (locked) {
     show(EL.lock);
