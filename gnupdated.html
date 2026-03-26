@@ -762,6 +762,43 @@ footer {
         box-shadow: 0 0 0 0 rgba(252, 38, 81, 0);
     }
 }
+
+body.american-mode {
+    --primary: #1a56db;
+    --primary-hover: #3b74f0;
+    --primary-light: rgba(26, 86, 219, 0.15);
+    --primary-lighter: rgba(26, 86, 219, 0.08);
+    --shadow-glow: 0 0 20px rgba(26, 86, 219, 0.4);
+    --gradient-primary: linear-gradient(135deg, #1a56db 0%, #3b74f0 100%);
+}
+
+body.american-mode .logo {
+    background: linear-gradient(90deg,
+        #cc0000 0%,
+        #ffffff 20%,
+        #1a56db 40%,
+        #1a56db 60%,
+        #ffffff 80%,
+        #cc0000 100%
+    );
+    background-size: 200% 100%;
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: americanGradient 5s linear infinite;
+}
+
+@keyframes americanGradient {
+    0%   { background-position: 0% 50%; }
+    100% { background-position: 200% 50%; }
+}
+
+#americanSlider::before {
+    content:"";position:absolute;height:20px;width:20px;left:3px;bottom:3px;background:white;border-radius:50%;transition:0.3s;
+}
+#americanToggle:checked + #americanSlider { background: #1a56db; }
+#americanToggle:checked + #americanSlider::before { transform: translateX(22px); }
+#americanSlider { background: #444; }
     </style>
 </head>
 <body>
@@ -1307,6 +1344,8 @@ function updateClassTimer() {
 
     const schedule = schedules[getActiveSchedule()];
 
+    const toAmPm = s => { const h = Math.floor(s/3600)%12||12, m = Math.floor((s%3600)/60); return `${h}:${m.toString().padStart(2,'0')} ${Math.floor(s/3600)<12?'AM':'PM'}`; };
+
     for (let i = 0; i < schedule.length; i++) {
         const p = schedule[i];
         if (currentTime >= p.start && currentTime < p.end) {
@@ -1318,7 +1357,8 @@ function updateClassTimer() {
             }
             return {
                 period: p.name,
-                remaining: `${mins}:${secs.toString().padStart(2, '0')}`
+                remaining: `${mins}:${secs.toString().padStart(2, '0')}`,
+                endTime: toAmPm(p.end)
             };
         }
         if (i < schedule.length - 1) {
@@ -1329,7 +1369,8 @@ function updateClassTimer() {
                 const secs = remaining % 60;
                 return {
                     period: 'Passing Period',
-                    remaining: `${mins}:${secs.toString().padStart(2, '0')}`
+                    remaining: `${mins}:${secs.toString().padStart(2, '0')}`,
+                    endTime: toAmPm(nextPeriod.start)
                 };
             }
         }
@@ -1345,9 +1386,11 @@ function updateClassTimer() {
 setInterval(() => {
     const timerDiv = document.getElementById('class-timer');
     if (timerDiv && timerDiv.offsetParent !== null) {
-        const { period, remaining } = updateClassTimer();
+        const { period, remaining, endTime } = updateClassTimer();
         document.getElementById('current-period').textContent = period;
         document.getElementById('time-remaining').textContent = remaining;
+        const endEl = document.getElementById('class-end-time');
+        if (endEl) endEl.textContent = endTime ? 'Ends at ' + endTime : '';
     }
 }, 500);
 
@@ -2177,6 +2220,7 @@ popupBody.innerHTML = `
         <div style="font-size: 14px; color: var(--text-muted); margin-bottom: 0.5rem;">Current Period</div>
         <div id="current-period" style="font-size: 18px; font-weight: bold; color: var(--accent); margin-bottom: 0.5rem;">Calculating...</div>
         <div id="time-remaining" style="font-size: 24px; font-weight: bold; color: var(--accent); font-family: 'Courier New', monospace;">--:--</div>
+        <div id="class-end-time" style="font-size: 13px; color: var(--text-muted); margin-top: 0.4rem;"></div>
     </div>
     <label for="schedule-select" style="font-weight: bold; display: block; margin-bottom: 0.5rem;">Schedule Type:</label>
     <select id="schedule-select" onchange="setSchedule(this.value)" style="width: 100%; padding: 0.875rem 1rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-secondary); color: var(--text); font-size: 15px; margin-bottom: 1.5rem;">
@@ -2203,7 +2247,13 @@ popupBody.innerHTML = `
 
     <button class="settings-button" onclick="tabCloak()">Tab Cloak</button>
     <br><br>
-    <button class="settings-button" onclick="clearFavorites()">Clear All Favorites</button>
+    <div style="display:flex;align-items:center;justify-content:space-between;background:var(--primary-lighter);border:1px solid var(--primary);border-radius:var(--radius);padding:0.875rem 1rem;margin-bottom:0.5rem;">
+        <span style="font-weight:600;font-size:15px;">American Playground</span>
+        <label style="position:relative;display:inline-block;width:48px;height:26px;flex-shrink:0;">
+            <input type="checkbox" id="americanToggle" onchange="toggleAmericanMode(this.checked)" ${localStorage.getItem('americanPlayground')==='true'?'checked':''} style="opacity:0;width:0;height:0;">
+            <span style="position:absolute;cursor:pointer;inset:0;background:var(--border-light);border-radius:26px;transition:0.3s;" id="americanSlider"></span>
+        </label>
+    </div>
     <br>
     `;
     popupBody.contentEditable = false;
@@ -2272,6 +2322,69 @@ const savedCloakName = localStorage.getItem('turkishPlaygroundCloakName');
 const savedCloakIcon = localStorage.getItem('turkishPlaygroundCloakIcon');
 if (savedCloakName) cloakName(savedCloakName);
 if (savedCloakIcon) cloakIcon(savedCloakIcon);
+
+const americanQuotes = [
+    "Kahnunism with the Tism - Lincoln",
+    "Deez nuts",
+    "Im not good with quotes - Kinzly",
+    "In a world where you can be anything, be quite - Brynn",
+    "Kagan = High Cortisol - Not Matthew",
+    "Treat people how you want to be treated. Golden Rule - Brynn",
+    "Oh, Fernando Alonso! - Andrew",
+    "Sponsered by Aubrey J Smith",
+    "Connor doesn't have a mohawk - Pedriddy ( Pedro )",
+    "Kanye West Passed Away - Aurbrey",
+    "Saying an insult is like throwing a rock in the ocean. You never know how deep it'll go - Jacob",
+    "Alonso is my Favorite Rookie - Andrew",
+    "Blue Circle - Lincoln",
+    "*Sigh* - Lincoln",
+    "If blue and red = green, then Charlie Kirk and epstein = Fien - Lincoln",
+    "Jarvis, invite this guy to the island - Lincoln",
+    "If Gavity can pull a apple, you can pull fine Shyt - Lincoln",
+    "More meth - Lincoln",
+    "Just quoting me of everything? - Lincoln",
+    "I love glue - Lincoln",
+    "Matter fact I used to eat glue - Lincoln",
+    "Yo were not quoting me on that. - Lincoln",
+    "*Burps* Exscuse me guys - Lincoln",
+    "I WANT A GLASS OF WATER - a guy on a plane",
+    "Cheese Burbur",
+    "She said 21 🤓 - Lincoln",
+    "I had a dream and i died for it - MLKjr",
+    "UHHHHHHHHHHHHHHHHHH - Andrew",
+    "Only thing I fear is KAHNUNISM - Lincoln",
+    "Its friday then, its saturday, Sunday WHAT?! - Lando Norris",
+    "King Connor - Pedro",
+    "Connor is vey green because he is a little bean - Pedro",
+    "I Got I got I got I got royal ,got royalty inside my DNA - Kendrick Lamar",
+    "SHE SAID SHE WAS 12🤓 - some guy getting arrested",
+];
+
+function toggleAmericanMode(on) {
+    localStorage.setItem('americanPlayground', on ? 'true' : 'false');
+    applyAmericanMode(on);
+}
+
+function applyAmericanMode(on) {
+    if (on) {
+        document.body.classList.add('american-mode');
+        document.querySelector('.logo').textContent = 'American Playground';
+        window._savedSubtitles = window._savedSubtitles || [...subtitles];
+        subtitles.length = 0;
+        americanQuotes.forEach(q => subtitles.push(q));
+    } else {
+        document.body.classList.remove('american-mode');
+        document.querySelector('.logo').textContent = 'Turkish Playground';
+        if (window._savedSubtitles) {
+            subtitles.length = 0;
+            window._savedSubtitles.forEach(q => subtitles.push(q));
+        }
+    }
+}
+
+if (localStorage.getItem('americanPlayground') === 'true') {
+    applyAmericanMode(true);
+}
 
 </script>
 </body>
