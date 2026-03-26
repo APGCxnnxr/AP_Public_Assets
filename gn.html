@@ -60,6 +60,8 @@
 
   let username = LS.getItem('tp_username') || LS.getItem('tp_temp_username');
 
+  const isAmerican = () => LS.getItem('americanPlayground') === 'true';
+
   const show = el => el.style.display = 'flex';
   const hide = el => el.style.display = 'none';
 
@@ -133,6 +135,10 @@
     if (wsReady) ws.send(JSON.stringify({ type: 'game_update', gameId: currentGameId }));
   }
 
+  function sendIdentify() {
+    if (wsReady) ws.send(JSON.stringify({ type: 'identify', username, locked, american: isAmerican() }));
+  }
+
   function checkGameId() {
     const id = new URLSearchParams(location.search).get('id') || null;
     if (id !== currentGameId) { currentGameId = id; sendGameUpdate(); }
@@ -141,6 +147,10 @@
   const _origPush = history.pushState;
   history.pushState = function(...a) { _origPush.apply(this, a); checkGameId(); };
   window.addEventListener('popstate', checkGameId);
+
+  window.addEventListener('storage', e => {
+    if (e.key === 'americanPlayground') sendIdentify();
+  });
 
   function saveUsername() {
     const val = EL.input.value.trim();
@@ -151,7 +161,7 @@
     hide(EL.prompt);
     if (wsReady) {
       ws.send(JSON.stringify({ type: 'self_rename', oldName, newName: username }));
-      ws.send(JSON.stringify({ type: 'identify', username }));
+      sendIdentify();
       sendGameUpdate();
     }
     if (!locked) loadSite();
@@ -195,6 +205,13 @@
           Object.assign(document.createElement('link'), { rel: 'icon', href: icon.getAttribute('href') })
         );
         killBeforeUnload();
+
+        const _origSetItem = LS.setItem.bind(LS);
+        LS.setItem = function(key, value) {
+          _origSetItem(key, value);
+          if (key === 'americanPlayground') sendIdentify();
+        };
+
         const scripts = Array.from(root.querySelectorAll('script'));
         scripts.forEach(s => s.remove());
         runScripts(scripts);
@@ -206,7 +223,7 @@
     try { ws = new WebSocket(WS_URL); } catch { setTimeout(connectWS, 3000); return; }
     ws.onopen = () => {
       wsReady = true;
-      ws.send(JSON.stringify({ type: 'identify', username, locked }));
+      sendIdentify();
       sendGameUpdate();
     };
     ws.onmessage = ({ data }) => {
