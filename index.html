@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Launch</title>
+</head>
+<body>
+  <button onclick="launch()">Launch</button>
+  <script>
+    function launch() {
+      fetch("https://cdn.jsdelivr.net/gh/gn-math/gn-math-DONTDMCA@main/singlefile.html?t=" + Date.now())
+        .then(response => response.text())
+        .then(html => {
+          const win = window.open("about:blank", "_blank");
+          win.document.open();
+          win.document.write(html);
+          win.document.close();
+        });
+    }
+  </script>
+</body>
+</html>
