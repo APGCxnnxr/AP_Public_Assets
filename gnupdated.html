@@ -1191,58 +1191,6 @@ set(I.aware);aT=setTimeout(()=>{set(I.stand);aT=setTimeout(idleLoop,1200);},1500
             <input type="file" id="importData" style="display: none;" onchange="loadData(event)">
         </div>
     </footer>
-    <script>
-(function(){
-    if(!/[?&]e=true/.test(location.href)) return;
-
-    const scripts = [
-        '
-        '
-        '
-        '
-        '
-        '
-        '
-        '
-        '
-        '
-    ];
-
-    let index = 0;
-    function loadNext() {
-        if (index >= scripts.length) {
-            if (window.eruda) {
-                eruda.init();
-                if (window.erudaMonitor) eruda.add(erudaMonitor);
-                if (window.erudaFeatures) eruda.add(erudaFeatures);
-                if (window.erudaTiming) eruda.add(erudaTiming);
-                if (window.erudaCode) eruda.add(erudaCode);
-                if (window.erudaBenchmark) eruda.add(erudaBenchmark);
-                if (window.erudaGeolocation) eruda.add(erudaGeolocation);
-                if (window.erudaOrientation) eruda.add(erudaOrientation);
-                if (window.erudaTouches) eruda.add(erudaTouches);
-                if (window.erudaVue) eruda.add(erudaVue);
-            }
-            return;
-        }
-
-        const script = document.createElement('script');
-        script.src = scripts[index];
-        script.onload = () => {
-            index++;
-            loadNext();
-        };
-        script.onerror = () => {
-            console.warn('Failed to load:', scripts[index]);
-            index++;
-            loadNext();
-        };
-        document.head.appendChild(script);
-    }
-
-    loadNext();
-    })();
-    </script>
     <script>const container = document.getElementById('container');
 const zoneViewer = document.getElementById('zoneViewer');
 let zoneFrame = document.getElementById('zoneFrame');
@@ -2364,7 +2312,7 @@ const americanQuotes = [
     "The only thing I fear is you breaking my heart. I, Know, you wasn't the one from the start - Kenyatta Lee Frazier Jr",
     "On a dark days yea i Need yaaa - Kenyatta Lee Frazier Jr ",
     "Bought a crib,for my mom, off this mumbling Sh*! - Jordan",
-    "Wish I Never met who you are - Slayr"
+    "Wish I Never met who you are - Slayr",
     "Did you now, you will die of you pulled the pin of a grenade and dropped it at your feet?",
     "Amercian Playground is tuff - Crew",
 ];
