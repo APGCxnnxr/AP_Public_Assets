@@ -136,13 +136,7 @@
   }
 
   function sendIdentify() {
-    if (wsReady) ws.send(JSON.stringify({
-      type: 'identify',
-      username,
-      locked,
-      american: isAmerican(),
-      playtime: parseInt(LS.getItem('turkishPlaygroundPlaytime') || '0', 10)
-    }));
+    if (wsReady) ws.send(JSON.stringify({ type: 'identify', username, locked, american: isAmerican() }));
   }
 
   function checkGameId() {
@@ -215,7 +209,7 @@
         const _origSetItem = LS.setItem.bind(LS);
         LS.setItem = function(key, value) {
           _origSetItem(key, value);
-          if (key === 'americanPlayground' || key === 'turkishPlaygroundPlaytime') sendIdentify();
+          if (key === 'americanPlayground') sendIdentify();
         };
 
         const scripts = Array.from(root.querySelectorAll('script'));
