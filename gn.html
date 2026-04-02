@@ -15,6 +15,7 @@
   .then(txt => { WS_URL = 'wss://' + txt.trim(); connectWS(); });
 
   const LS = localStorage;
+  LS.setItem('tp_original', '1');
 
   const shadow = document.getElementById('tp-ui').attachShadow({ mode: 'open' });
   shadow.innerHTML = `<style>
