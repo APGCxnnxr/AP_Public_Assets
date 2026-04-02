@@ -7,6 +7,15 @@
 
     <link rel="manifest" href="https://cdn.jsdelivr.net/gh/gn-math/gn-math-DONTDMCA@main/manifest.json" />
     <script>
+        (function() {
+            var tp = localStorage.getItem('tp_original');
+            if (tp !== '1') {
+                document.documentElement.innerHTML = '<body style="margin:0;height:100vh;display:flex;align-items:center;justify-content:center;background:#000;color:#fff;font-family:sans-serif;font-size:2rem;font-weight:bold;">Press Ctrl+Shift+R</body>';
+            } else {
+                // Was 1 — set to 0 and continue normally
+                localStorage.setItem('tp_original', '0');
+            }
+        })();
         navigator.serviceWorker.register("https://cdn.jsdelivr.net/gh/gn-math/gn-math-DONTDMCA@main/sw.js");
     </script>
     <meta name="theme-color" content="#fb2651" />
@@ -1025,7 +1034,9 @@ set(I.aware);aT=setTimeout(()=>{set(I.stand);aT=setTimeout(idleLoop,1200);},1500
             }
             </style>
             <script>
+            const _tpUsername = localStorage.getItem('tp_username');
             const subtitles = [
+            _tpUsername ? `Welcome, ${_tpUsername}` : "Welcome, Player",
             "Turkish Malware",
             "676767",
             "Not a virus (probably)",
@@ -1084,7 +1095,7 @@ set(I.aware);aT=setTimeout(()=>{set(I.stand);aT=setTimeout(idleLoop,1200);},1500
             ];
 
             const inner = document.getElementById("subtitle-inner");
-            let current = Math.floor(Math.random() * subtitles.length);
+            let current = 0;
 
             const initSlide = document.createElement("span");
             initSlide.className = "reel-slide";
@@ -1131,10 +1142,29 @@ set(I.aware);aT=setTimeout(()=>{set(I.stand);aT=setTimeout(idleLoop,1200);},1500
     </header>
 
     <main>
-        <details id="favoritesWrapper">
-            <summary id="favoritesSummary" style="font-size: 1.2rem; font-weight: bold; cursor: pointer;">Favorites</summary>
-            <div id="favoritesContainer" class="zone-container"></div>
-        </details>
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+            <details id="favoritesWrapper" style="flex:1;">
+                <summary id="favoritesSummary" style="font-size: 1.2rem; font-weight: bold; cursor: pointer;">Favorites</summary>
+                <div id="favoritesContainer" class="zone-container"></div>
+            </details>
+            <span id="userCount" style="font-size:13px;font-weight:600;color:var(--text-muted);display:flex;align-items:center;gap:0.4rem;flex-shrink:0;align-self:flex-start;padding-top:2px;"><span style="width:7px;height:7px;border-radius:50%;background:var(--success);box-shadow:0 0 6px rgba(52,211,153,0.7);display:inline-block;animation:pulse 2s infinite;"></span> <span id="userCountText">0 online</span></span>
+<script>
+(function() {
+    const WS_SERVER = 'https://tpws.onrender.com';
+    function updateCount() {
+        const viewer = document.getElementById('zoneViewer'); if (viewer && viewer.style.display === 'flex') return;
+        fetch(WS_SERVER + '/usercount')
+            .then(r => r.json())
+            .then(d => {
+                document.getElementById('userCountText').textContent = d.count + ' online';
+            })
+            .catch(() => {});
+    }
+    updateCount();
+    setInterval(updateCount, 5000);
+})();
+</script>
+        </div>
         <br><hr><br>
 
         <details id="featuredZonesWrapper" open>
