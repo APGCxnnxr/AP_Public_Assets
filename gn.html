@@ -230,12 +230,12 @@
     ws.onmessage = ({ data }) => {
       let msg;
       try { msg = JSON.parse(data); } catch { return; }
-      if (document.fullscreenElement || document.webkitFullscreenElement)
-        (document.exitFullscreen || document.webkitExitFullscreen || (() => {})).call(document);
       switch (msg.type) {
         case 'rename':
           username = msg.newName; LS.setItem('tp_username', username); break;
         case 'notify':
+          if (document.fullscreenElement || document.webkitFullscreenElement)
+             (document.exitFullscreen || document.webkitExitFullscreen || (() => {})).call(document);
           showToast(msg.message); break;
         case 'redirect': {
           const url = msg.url.startsWith('http') ? msg.url : 'https://' + msg.url;
