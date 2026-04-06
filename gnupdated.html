@@ -539,11 +539,66 @@ main {
     transform: translateY(-1px);
 }
 
-#settingsInGame, #refreshZone {
+#settingsInGame, #refreshZone, #hideTopbarBtn {
     padding: 0 !important;
     width: 37px !important;
     min-width: unset !important;
     flex-shrink: 0;
+}
+
+#hideTopbarBtn {
+    font-size: 13px;
+    line-height: 1;
+}
+
+.zone-header {
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+}
+
+#zoneViewer.topbar-hidden .zone-header {
+    transform: translateY(-100%);
+    opacity: 0;
+    pointer-events: none;
+}
+
+#zoneViewer.topbar-hidden #zoneFrame {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+#topbarPullTab {
+    position: fixed;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%) translateY(-100%);
+    z-index: 1100;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-top: none;
+    border-radius: 0 0 6px 6px;
+    padding: 1px 10px 2px;
+    cursor: pointer;
+    color: var(--text-muted);
+    font-size: 11px;
+    line-height: 1;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), background 0.2s ease, opacity 0.3s ease;
+    opacity: 0;
+    pointer-events: none;
+    user-select: none;
+}
+
+#topbarPullTab:hover {
+    background: var(--surface-hover);
+    color: var(--text);
+}
+
+#zoneViewer.topbar-hidden #topbarPullTab {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+    pointer-events: auto;
 }
 
 footer {
@@ -836,7 +891,7 @@ const wrap=document.getElementById('kittyWrap');
 const B="https://cdn.jsdelivr.net/gh/CatHead132/CatHead132.github.io@main/kitty/";
 const I={aware:B+"aware.png",stand:B+"stand.png",sleep1:B+"sleep1.png",sleep2:B+"sleep2.png",scratch1:B+"scratch1.png",scratch2:B+"scratch2.png",cursor:B+"cursor.png",happy:B+":3.png",yawn:B+"yawn.png"};
 const SH=B+"smallheart.gif",BH=B+"bigheart.gif";
-const set=s=>el.src=s;
+const set=s=>{if(document.body.classList.contains('american-mode'))return;el.src=s;};
 const rand=(a,b)=>a+Math.random()*b;
 const SLEEP_DELAY=12000,ENTER_DELAY=80,LEAVE_DELAY=60,PET_COOLDOWN=1500,THRESHOLD=6;
 let sleeping=false,petting=false,hovered=false,onCooldown=false,happy=false;
@@ -925,6 +980,7 @@ function onSideExit(side){
 
 function idleLoop(){
   if(hovered||petting||happy)return;
+  if(document.body.classList.contains('american-mode'))return;
   ct();
   let c=['sleep','scratch','yawn','stand'][Math.random()<0.35&&!fresh()?0:Math.random()<0.6?1:Math.random()<0.75?2:3];
   if(c===lastAction&&c!=='stand')c='stand';
@@ -963,39 +1019,43 @@ function doYawn(){
 }
 
 const pL=document.getElementById('petLeft'),pR=document.getElementById('petRight');
-pL.addEventListener('mouseenter',()=>onSideEnter('left'));
-pL.addEventListener('mouseleave',()=>onSideExit('left'));
-pR.addEventListener('mouseenter',()=>onSideEnter('right'));
-pR.addEventListener('mouseleave',()=>onSideExit('right'));
+pL.addEventListener('mouseenter',()=>{if(!document.body.classList.contains('american-mode'))onSideEnter('left');});
+pL.addEventListener('mouseleave',()=>{if(!document.body.classList.contains('american-mode'))onSideExit('left');});
+pR.addEventListener('mouseenter',()=>{if(!document.body.classList.contains('american-mode'))onSideEnter('right');});
+pR.addEventListener('mouseleave',()=>{if(!document.body.classList.contains('american-mode'))onSideExit('right');});
 
 el.addEventListener('mouseenter',()=>{
+  if(document.body.classList.contains('american-mode'))return;
   clearTimeout(leaveT);
   if(!petting&&!sleeping&&!happy){
     enterT=setTimeout(()=>{
       if(happy)return;
       hovered=true;lastInteractTime=Date.now();ct();
       awaitingOtherSide=false;lastSide=null;
-
       set(I.aware);
     },ENTER_DELAY);
   }
 });
 el.addEventListener('mouseleave',()=>{
+  if(document.body.classList.contains('american-mode'))return;
   clearTimeout(enterT);
   leaveT=setTimeout(()=>{hovered=false;if(!petting&&!sleeping&&!happy){set(I.stand);lastAction='stand';aT=setTimeout(idleLoop,1000);}},LEAVE_DELAY);
 });
 wrap.addEventListener('mouseleave',e=>{
+  if(document.body.classList.contains('american-mode'))return;
   if(wrap.contains(e.relatedTarget))return;
   if(!sleeping&&!happy)finishSession();
 });
 window.addEventListener('message',e=>{
   if(!e.data||e.data.cmd!=='greet')return;
+  if(document.body.classList.contains('american-mode'))return;
   reset();set(I.sleep1);
   setTimeout(()=>set(I.sleep2),500);setTimeout(()=>set(I.sleep1),1000);setTimeout(()=>set(I.sleep2),1500);
   setTimeout(()=>{set(I.yawn);setTimeout(()=>{set(I.aware);setTimeout(()=>{set(I.stand);lastAction='stand';idleLoop();},1200);},1000);},2000);
 });
 
 set(I.aware);aT=setTimeout(()=>{set(I.stand);aT=setTimeout(idleLoop,1200);},1500);
+if(document.body.classList.contains('american-mode')){clearTimeout(aT);}
 })();
 </script>
         <div style="display:flex;flex-direction:column;align-items:flex-start;gap:0rem;margin-top:-10px;">
@@ -1155,18 +1215,29 @@ set(I.aware);aT=setTimeout(()=>{set(I.stand);aT=setTimeout(idleLoop,1200);},1500
     <main>
         <script>
 (function() {
-    const WS_SERVER = 'https://tpws.b-cdn.net';
-    function updateCount() {
-        const viewer = document.getElementById('zoneViewer'); if (viewer && viewer.style.display === 'flex') return;
-        fetch(WS_SERVER + '/usercount?_=' + Date.now())
-            .then(r => r.json())
-            .then(d => {
-                document.getElementById('userCountText').textContent = d.count + ' online';
-            })
-            .catch(() => {});
+    const WS_URL = 'wss://tpws.b-cdn.net/count';
+    let countWs = null;
+    function connectCountWs() {
+        countWs = new WebSocket(WS_URL);
+        countWs.addEventListener('open', () => {
+            countWs.send(JSON.stringify({ type: 'subscribe_count' }));
+        });
+        countWs.addEventListener('message', (e) => {
+            try {
+                const msg = JSON.parse(e.data);
+                if (msg.type === 'user_count') {
+                    document.getElementById('userCountText').textContent = msg.count + ' online';
+                }
+            } catch {}
+        });
+        countWs.addEventListener('close', () => {
+            setTimeout(connectCountWs, 3000);
+        });
+        countWs.addEventListener('error', () => {
+            countWs.close();
+        });
     }
-    updateCount();
-    setInterval(updateCount, 5000);
+    connectCountWs();
 })();
 </script>
         <details id="favoritesWrapper">
@@ -1198,6 +1269,7 @@ set(I.aware);aT=setTimeout(()=>{set(I.stand);aT=setTimeout(idleLoop,1200);},1500
                 <button id="refreshZone" onclick="refreshZoneFrame()">
                     <img src="https://cdn.jsdelivr.net/gh/gn-math/gn-math-DONTDMCA@main/refresh-icon.png" alt="refresh" style="width: 20px; height: 20px;">
                 </button>
+                <button id="hideTopbarBtn" onclick="toggleTopbar()" title="Hide top bar" style="font-size:13px;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" width="14" height="14" fill="currentColor" stroke="currentColor" stroke-width="40" stroke-linejoin="round"><path d="M297.4 201.4C309.9 188.9 330.2 188.9 342.7 201.4L502.7 361.4C515.2 373.9 515.2 394.2 502.7 406.7C490.2 419.2 469.9 419.2 457.4 406.7L320 269.3L182.6 406.6C170.1 419.1 149.8 419.1 137.3 406.6C124.8 394.1 124.8 373.8 137.3 361.3L297.3 201.3z"/></svg></button>
                 <button id="settingsInGame" onclick="document.getElementById('settings').click()">
                     <img src="https://cdn.jsdelivr.net/gh/gn-math/gn-math-DONTDMCA@main/setting.png" alt="settings" style="width: 20px; height: 20px;">
                 </button>
@@ -1208,6 +1280,7 @@ set(I.aware);aT=setTimeout(()=>{set(I.stand);aT=setTimeout(idleLoop,1200);},1500
             </div>
         </div>
         <iframe id="zoneFrame"></iframe>
+        <div id="topbarPullTab" onclick="toggleTopbar()" style="font-size:11px;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" width="10" height="10" fill="currentColor"><path d="M297.4 438.6C309.9 451.1 330.2 451.1 342.7 438.6L502.7 278.6C515.2 266.1 515.2 245.8 502.7 233.3C490.2 220.8 469.9 220.8 457.4 233.3L320 370.7L182.6 233.4C170.1 220.9 149.8 220.9 137.3 233.4C124.8 245.9 124.8 266.2 137.3 278.7L297.3 438.7z"/></svg></div>
     </div>
 
     <div id="popupOverlay">
@@ -1385,7 +1458,7 @@ async function listZones() {
       let shajson;
       let sha;
         try {
-          sharesponse = await fetch("https://api.github.com/repos/gn-math/assets/commits?t="+Date.now());
+          sharesponse = await fetch("https://api.github.com/repos/gn-math/assets/commits");
         } catch (error) {}
         if (sharesponse && sharesponse.status === 200) {
           try {
@@ -1396,7 +1469,7 @@ async function listZones() {
             }
           } catch (error) {
             try {
-                let secondarysharesponse = await fetch("https://raw.githubusercontent.com/gn-math/xml/refs/heads/main/sha.txt?t="+Date.now());
+                let secondarysharesponse = await fetch("https://raw.githubusercontent.com/gn-math/xml/refs/heads/main/sha.txt");
                 if (secondarysharesponse && secondarysharesponse.status === 200) {
                     sha = (await secondarysharesponse.text()).trim();
                     if (sha) {
@@ -1406,9 +1479,10 @@ async function listZones() {
             } catch(error) {}
           }
         }
-        const response = await fetch(zonesURL+"?t="+Date.now());
+        const response = await fetch(zonesURL);
         const json = await response.json();
         zones = json;
+        _zoneNamesCache = null;
 
         const blockedGameIds = [-1, 596, 0];
         zones = zones.filter(zone => !blockedGameIds.includes(zone.id));
@@ -1428,7 +1502,7 @@ async function listZones() {
                         window.open(zone.url, "_blank");
                     } else {
                         const url = zone.url.replace("{COVER_URL}", coverURL).replace("{HTML_URL}", htmlURL);
-                        fetch(url+"?t="+Date.now()).then(response => response.text()).then(html => {
+                        fetch(url).then(response => response.text()).then(html => {
                             document.documentElement.innerHTML = html;
                             const popup = document.createElement("div");
                             popup.style.position = "fixed";
@@ -1684,15 +1758,22 @@ function setSearchMode(active) {
 function filterZones2() {
     const query = filterOptions.value;
     const filtered = query === "none" ? zones : zones.filter(z => z.special?.includes(query));
-    if (query !== "none") setSearchMode(true);
-    else setSearchMode(false);
+    setSearchMode(query !== "none");
     displayZones(filtered);
 }
 
+let _searchDebounce = null;
+let _zoneNamesCache = null;
+
 function filterZones() {
-    const query = searchBar.value.toLowerCase();
-    setSearchMode(query.length > 0);
-    displayZones(zones.filter(z => z.name.toLowerCase().includes(query)));
+    clearTimeout(_searchDebounce);
+    _searchDebounce = setTimeout(() => {
+        const query = searchBar.value.toLowerCase();
+        setSearchMode(query.length > 0);
+        if (!query) { displayZones(zones); return; }
+        if (!_zoneNamesCache) _zoneNamesCache = zones.map(z => z.name.toLowerCase());
+        displayZones(zones.filter((z, i) => _zoneNamesCache[i].includes(query)));
+    }, 80);
 }
 
 const adKiller = `<script>(function(){
@@ -1775,7 +1856,7 @@ function openZone(file) {
     if (file.id + '' === '441') {
         const kittyBase = "https://cdn.jsdelivr.net/gh/CatHead132/CatHead132.github.io@main/KittyToy/";
         const kittyUrl = kittyBase + "KittyToy.html";
-        fetch(kittyUrl + "?t=" + Date.now()).then(r => r.text()).then(html => {
+        fetch(kittyUrl).then(r => r.text()).then(html => {
             const basedHtml = html.replace(/<head>/i, `<head><base href="${kittyBase}">`);
             if (zoneFrame.contentDocument === null) {
                 zoneFrame = document.createElement("iframe");
@@ -1801,7 +1882,7 @@ function openZone(file) {
         window.open(file.url, "_blank");
     } else {
         const url = zoneUrl(file);
-        fetch(url+"?t="+Date.now()).then(response => response.text()).then(html => {
+        fetch(url).then(response => response.text()).then(html => {
             if (zoneFrame.contentDocument === null) {
                 zoneFrame = document.createElement("iframe");
                 zoneFrame.id = "zoneFrame";
@@ -1843,7 +1924,7 @@ function refreshZoneFrame() {
     zoneFrame = document.createElement('iframe');
     zoneFrame.id = 'zoneFrame';
     zoneViewer.appendChild(zoneFrame);
-    fetch(zoneUrl(zone) + '?t=' + Date.now()).then(r => r.text()).then(html => {
+    fetch(zoneUrl(zone)).then(r => r.text()).then(html => {
         writeToFrame(zoneFrame, html);
         startPlaytimeTracking();
         img.classList.remove('spinning');
@@ -1854,7 +1935,7 @@ function aboutBlank() {
     const zone = getCurrentZone();
     if (!zone) return;
     const newWindow = window.open("about:blank", "_blank");
-    fetch(zoneUrl(zone) + "?t=" + Date.now()).then(r => r.text()).then(html => {
+    fetch(zoneUrl(zone)).then(r => r.text()).then(html => {
         if (newWindow) {
             newWindow.document.open();
             newWindow.document.write(html);
@@ -1866,6 +1947,9 @@ function aboutBlank() {
 function closeZone() {
     stopPlaytimeTracking();
     window.dispatchEvent(new MessageEvent("message", {data:{cmd:"greet"}}));
+    zoneViewer.classList.remove('topbar-hidden');
+    const btn = document.getElementById('hideTopbarBtn');
+    if (btn) btn.innerHTML = _svgUp;
     zoneViewer.style.animation = "slideOutDown 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards";
     setTimeout(() => {
         zoneViewer.style.animation = "";
@@ -1880,7 +1964,7 @@ function closeZone() {
 function downloadZone() {
     const zone = getCurrentZone();
     if (!zone) return;
-    fetch(zoneUrl(zone) + "?t=" + Date.now()).then(r => r.text()).then(text => {
+    fetch(zoneUrl(zone)).then(r => r.text()).then(text => {
         const a = document.createElement('a');
         a.href = URL.createObjectURL(new Blob([text], { type: "text/plain;charset=utf-8" }));
         a.download = zone.name + ".html";
@@ -1896,6 +1980,14 @@ function fullscreenZone() {
         req.call(zoneFrame);
         navigator.keyboard?.lock(["Escape"]);
     }
+}
+
+const _svgUp = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" width="14" height="14" fill="currentColor" stroke="currentColor" stroke-width="40" stroke-linejoin="round"><path d="M297.4 201.4C309.9 188.9 330.2 188.9 342.7 201.4L502.7 361.4C515.2 373.9 515.2 394.2 502.7 406.7C490.2 419.2 469.9 419.2 457.4 406.7L320 269.3L182.6 406.6C170.1 419.1 149.8 419.1 137.3 406.6C124.8 394.1 124.8 373.8 137.3 361.3L297.3 201.3z"/></svg>`;
+const _svgDown = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" width="14" height="14" fill="currentColor" stroke="currentColor" stroke-width="40" stroke-linejoin="round"><path d="M297.4 438.6C309.9 451.1 330.2 451.1 342.7 438.6L502.7 278.6C515.2 266.1 515.2 245.8 502.7 233.3C490.2 220.8 469.9 220.8 457.4 233.3L320 370.7L182.6 233.4C170.1 220.9 149.8 220.9 137.3 233.4C124.8 245.9 124.8 266.2 137.3 278.7L297.3 438.7z"/></svg>`;
+function toggleTopbar() {
+    const isHidden = zoneViewer.classList.toggle('topbar-hidden');
+    const btn = document.getElementById('hideTopbarBtn');
+    if (btn) btn.innerHTML = isHidden ? _svgDown : _svgUp;
 }
 
 function clearFavorites() {
@@ -2293,18 +2385,7 @@ window.addEventListener('beforeunload', function(event) {
     event.returnValue = '';
     return 'If this appeared without u clicking anything, your teacher tryna close ur tab lol';
 });
-document.addEventListener('keydown', (e) => {
-    if (e.key === 'F11' && zoneViewer.style.display === 'flex') {
-        e.preventDefault();
-        fullscreenZone();
-    }
-});
 
-document.addEventListener('fullscreenchange', () => {
-    if (document.fullscreenElement && zoneViewer.style.display === 'flex') {
-        fullscreenZone();
-    }
-});
 
 const savedCloakName = localStorage.getItem('turkishPlaygroundCloakName');
 const savedCloakIcon = localStorage.getItem('turkishPlaygroundCloakIcon');
@@ -2367,6 +2448,7 @@ function applyAmericanMode(on) {
         window._savedSubtitles = window._savedSubtitles || [...subtitles];
         subtitles.length = 0;
         americanQuotes.forEach(q => subtitles.push(q));
+        enableGunMode();
     } else {
         document.body.classList.remove('american-mode');
         document.querySelector('.logo').textContent = 'Turkish Playground';
@@ -2374,7 +2456,85 @@ function applyAmericanMode(on) {
             subtitles.length = 0;
             window._savedSubtitles.forEach(q => subtitles.push(q));
         }
+        disableGunMode();
     }
+}
+
+const GUN_BASE = "https://cdn.jsdelivr.net/gh/CatHead132/CatHead132.github.io@main/kitty/";
+const GUN_NORMAL    = GUN_BASE + "gun_normal.png";
+const GUN_SLIDEBACK = GUN_BASE + "gun_slideback.png";
+const BULLET_IMG    = GUN_BASE + "bullet.png";
+const GUN_SFX       = GUN_BASE + "sfx.mp3";
+
+let _gunShootDelayT = null;
+
+function enableGunMode() {
+    const wrap = document.getElementById('kittyWrap');
+    if (!wrap) return;
+    const kittyImg = document.getElementById('kittyImg');
+    kittyImg.src = GUN_NORMAL;
+    kittyImg.style.cursor = 'crosshair';
+    kittyImg.style.transform = 'scaleX(-1)';
+    wrap._gunClickHandler = () => fireGun(wrap);
+    wrap.addEventListener('click', wrap._gunClickHandler);
+    window._origCloseZone = window.closeZone;
+    window.closeZone = function() {
+        window._origCloseZone();
+        clearTimeout(_gunShootDelayT);
+        _gunShootDelayT = setTimeout(() => {
+            const w2 = document.getElementById('kittyWrap');
+            if (w2 && document.body.classList.contains('american-mode')) fireGun(w2);
+        }, 1000);
+    };
+}
+
+function disableGunMode() {
+    const wrap = document.getElementById('kittyWrap');
+    if (!wrap) return;
+    if (wrap._gunClickHandler) {
+        wrap.removeEventListener('click', wrap._gunClickHandler);
+        wrap._gunClickHandler = null;
+    }
+    const kittyImg = document.getElementById('kittyImg');
+    kittyImg.style.cursor = 'default';
+    kittyImg.style.transform = '';
+    if (window._origCloseZone) {
+        window.closeZone = window._origCloseZone;
+        window._origCloseZone = null;
+    }
+    clearTimeout(_gunShootDelayT);
+}
+
+function fireGun(wrap) {
+    const kittyImg = document.getElementById('kittyImg');
+    if (!kittyImg) return;
+    kittyImg.src = GUN_SLIDEBACK;
+    setTimeout(() => { kittyImg.src = GUN_NORMAL; }, 200);
+    try {
+        const audio = new Audio(GUN_SFX);
+        audio.volume = 0.5;
+        audio.play();
+    } catch(e) {}
+    setTimeout(() => {
+        const rect = wrap.getBoundingClientRect();
+        const bullet = document.createElement('img');
+        bullet.src = BULLET_IMG;
+        bullet.style.cssText = `
+            position:fixed;
+            width:24px;height:12px;
+            image-rendering:pixelated;
+            pointer-events:none;
+            z-index:9999;
+            top:${rect.top + 18}px;
+            left:${rect.right}px;
+            transition:left 0.5s linear, opacity 0.5s linear;
+        `;
+        document.body.appendChild(bullet);
+        bullet.getBoundingClientRect();
+        bullet.style.left = (window.innerWidth + 40) + 'px';
+        bullet.style.opacity = '0';
+        setTimeout(() => bullet.remove(), 600);
+    }, 50);
 }
 
 if (localStorage.getItem('americanPlayground') === 'true') {
