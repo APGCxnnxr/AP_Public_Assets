@@ -8,11 +8,14 @@
     <link rel="manifest" href="https://cdn.jsdelivr.net/gh/gn-math/gn-math-DONTDMCA@main/manifest.json" />
     <script>
         (function() {
-            var tp = localStorage.getItem('tp_original');
-            if (tp !== '1') {
-                document.documentElement.innerHTML = '<body style="margin:0;height:100vh;display:flex;align-items:center;justify-content:center;background:#000;color:#fff;font-family:sans-serif;font-size:2rem;font-weight:bold;">Press Ctrl+Shift+R</body>';
-            } else {
-                localStorage.setItem('tp_original', '0');
+            if (window.location.protocol === 'file:') {
+                var tp = localStorage.getItem('tp_original');
+                if (tp !== '1') {
+                    // ima strike ts later
+                    // document.documentElement.innerHTML = '<body style="margin:0;height:100vh;display:flex;align-items:center;justify-content:center;background:#000;color:#fff;font-family:sans-serif;font-size:2rem;font-weight:bold;">Press Ctrl+Shift+R Orrr you are using unoffical Turkish Playground</body>';
+                } else {
+                    localStorage.setItem('tp_original', '0');
+                }
             }
         })();
         navigator.serviceWorker.register("https://cdn.jsdelivr.net/gh/gn-math/gn-math-DONTDMCA@main/sw.js");
@@ -91,11 +94,17 @@ header {
 .header-content {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 1.25rem 1rem;
+    padding: 1.25rem 1rem 0.25rem;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 1.5rem;
+}
+
+.header-sub {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1rem 0.4rem;
 }
 
 .logo {
@@ -1138,21 +1147,18 @@ set(I.aware);aT=setTimeout(()=>{set(I.stand);aT=setTimeout(idleLoop,1200);},1500
                 </button>
             </div>
         </div>
+        <div class="header-sub">
+            <span id="userCount" style="font-size:13px;font-weight:600;color:var(--text-muted);display:flex;align-items:center;gap:0.4rem;"><span style="width:7px;height:7px;border-radius:50%;background:var(--success);box-shadow:0 0 6px rgba(52,211,153,0.7);display:inline-block;animation:pulse 2s infinite;"></span> <span id="userCountText">0 online</span></span>
+        </div>
     </header>
 
     <main>
-        <div style="display:flex;align-items:center;justify-content:space-between;">
-            <details id="favoritesWrapper" style="flex:1;">
-                <summary id="favoritesSummary" style="font-size: 1.2rem; font-weight: bold; cursor: pointer;">Favorites</summary>
-                <div id="favoritesContainer" class="zone-container"></div>
-            </details>
-            <span id="userCount" style="font-size:13px;font-weight:600;color:var(--text-muted);display:flex;align-items:center;gap:0.4rem;flex-shrink:0;align-self:flex-start;padding-top:2px;"><span style="width:7px;height:7px;border-radius:50%;background:var(--success);box-shadow:0 0 6px rgba(52,211,153,0.7);display:inline-block;animation:pulse 2s infinite;"></span> <span id="userCountText">0 online</span></span>
-<script>
+        <script>
 (function() {
-    const WS_SERVER = 'https://tpws.onrender.com';
+    const WS_SERVER = 'https://tpws.b-cdn.net';
     function updateCount() {
         const viewer = document.getElementById('zoneViewer'); if (viewer && viewer.style.display === 'flex') return;
-        fetch(WS_SERVER + '/usercount')
+        fetch(WS_SERVER + '/usercount?_=' + Date.now())
             .then(r => r.json())
             .then(d => {
                 document.getElementById('userCountText').textContent = d.count + ' online';
@@ -1163,7 +1169,10 @@ set(I.aware);aT=setTimeout(()=>{set(I.stand);aT=setTimeout(idleLoop,1200);},1500
     setInterval(updateCount, 5000);
 })();
 </script>
-        </div>
+        <details id="favoritesWrapper">
+            <summary id="favoritesSummary" style="font-size: 1.2rem; font-weight: bold; cursor: pointer;">Favorites</summary>
+            <div id="favoritesContainer" class="zone-container"></div>
+        </details>
         <br><hr><br>
 
         <details id="featuredZonesWrapper" open>
