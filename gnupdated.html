@@ -73,7 +73,7 @@ body {
     padding: 0;
     background: var(--bg);
     color: var(--text);
-    transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1), color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    color-scheme: dark;
     font-weight: 400;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -116,16 +116,16 @@ header {
     -webkit-text-fill-color: transparent;
     -webkit-text-stroke: 0.01px #ffffff;
     animation: gradientShift 6s linear infinite;
-    text-shadow:
-    0 2px 2px rgba(255, 255, 255, 0.1),
-    0 4px 4px rgba(255, 255, 255, 0.08),
-    0 6px 6px rgba(255, 255, 255, 0.06),
-    0 8px 8px rgba(255, 255, 255, 0.04);
 }
 
 @keyframes gradientShift {
     0% { background-position: 0% 50%; }
     100% { background-position: 100% 50%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .logo { animation: none; background-position: 0% 50%; }
+    body.american-mode .logo { animation: none; background-position: 0% 50%; }
 }
 
 .search-container {
@@ -165,7 +165,6 @@ header {
     border: 0;
     border-radius: var(--radius);
     background: var(--glass);
-    backdrop-filter: blur(20px);
     color: var(--text-muted);
     font-size: 15px;
     cursor: pointer;
@@ -233,6 +232,7 @@ main {
     transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
     position: relative;
     box-shadow: var(--shadow-sm);
+    will-change: auto;
     contain: layout style paint;
     aspect-ratio: 1;
 }
@@ -423,6 +423,8 @@ main {
     width: 100%;
     min-height: 0;
     display: block;
+    background: #000;
+    color-scheme: dark;
 }
 
 #popupOverlay {
@@ -1295,7 +1297,7 @@ if(document.body.classList.contains('american-mode')){clearTimeout(aT);}
                 <button onclick="closeZone()">Close</button>
             </div>
         </div>
-        <iframe id="zoneFrame"></iframe>
+        <iframe id="zoneFrame" style="background:#000;color-scheme:dark;"></iframe>
         <div id="topbarPullTab" onclick="toggleTopbar()" style="font-size:11px;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" width="10" height="10" fill="currentColor"><path d="M297.4 438.6C309.9 451.1 330.2 451.1 342.7 438.6L502.7 278.6C515.2 266.1 515.2 245.8 502.7 233.3C490.2 220.8 469.9 220.8 457.4 233.3L320 370.7L182.6 233.4C170.1 220.9 149.8 220.9 137.3 233.4C124.8 245.9 124.8 266.2 137.3 278.7L297.3 438.7z"/></svg></div>
     </div>
 
@@ -1384,16 +1386,26 @@ const schedules = {
     ]
 };
 
+let _cachedScheduleType = null;
+let _cachedScheduleExpiry = 0;
+
 function getActiveSchedule() {
+    if (_cachedScheduleType && Date.now() < _cachedScheduleExpiry) {
+        return _cachedScheduleType;
+    }
     const saved = localStorage.getItem('turkishPlaygroundSchedule');
     if (saved) {
         const parsed = JSON.parse(saved);
         if (Date.now() < parsed.expiry) {
+            _cachedScheduleType = parsed.type;
+            _cachedScheduleExpiry = parsed.expiry;
             return parsed.type;
         } else {
             localStorage.removeItem('turkishPlaygroundSchedule');
         }
     }
+    _cachedScheduleType = 'regular';
+    _cachedScheduleExpiry = Infinity;
     return 'regular';
 }
 
@@ -1402,6 +1414,8 @@ function setSchedule(type) {
         type: type,
         expiry: Date.now() + 12 * 60 * 60 * 1000
     }));
+    _cachedScheduleType = type;
+    _cachedScheduleExpiry = Date.now() + 12 * 60 * 60 * 1000;
 }
 
 function updateClassTimer() {
@@ -1466,13 +1480,20 @@ setInterval(() => {
         const endEl = document.getElementById('class-end-time');
         if (endEl) endEl.textContent = endTime ? 'Ends at ' + endTime : '';
     }
-}, 500);
+}, 1000);
 
 async function listZones() {
     try {
-      let sharesponse;
-      let shajson;
       let sha;
+      const SHA_TTL = 5 * 60 * 1000;
+      const cachedSha = localStorage.getItem('tp_assets_sha');
+      const cachedShaTime = parseInt(localStorage.getItem('tp_assets_sha_time') || '0');
+      if (cachedSha && Date.now() - cachedShaTime < SHA_TTL) {
+          sha = cachedSha;
+          zonesURL = `https://tpcdn.b-cdn.net/gh/gn-math/assets@${sha}/zones.json`;
+      } else {
+        let sharesponse;
+        let shajson;
         try {
           sharesponse = await fetch("https://api.github.com/repos/gn-math/assets/commits");
         } catch (error) {}
@@ -1482,6 +1503,8 @@ async function listZones() {
             sha = shajson[0]['sha'];
             if (sha) {
                 zonesURL = `https://tpcdn.b-cdn.net/gh/gn-math/assets@${sha}/zones.json`;
+                localStorage.setItem('tp_assets_sha', sha);
+                localStorage.setItem('tp_assets_sha_time', Date.now().toString());
             }
           } catch (error) {
             try {
@@ -1490,11 +1513,14 @@ async function listZones() {
                     sha = (await secondarysharesponse.text()).trim();
                     if (sha) {
                         zonesURL = `https://tpcdn.b-cdn.net/gh/gn-math/assets@${sha}/zones.json`;
+                        localStorage.setItem('tp_assets_sha', sha);
+                        localStorage.setItem('tp_assets_sha_time', Date.now().toString());
                     }
                 }
             } catch(error) {}
           }
         }
+      }
         const response = await fetch(zonesURL);
         const json = await response.json();
         zones = json;
@@ -1510,7 +1536,11 @@ async function listZones() {
         const search = new URLSearchParams(window.location.search);
         const id = search.get('id');
         const embed = window.location.hash.includes("embed");
-        if (id) {
+        if (id === 'chat') {
+            const tpName = localStorage.getItem('tp_username') || '';
+            const chatUrl = 'https://tpchat.b-cdn.net' + (tpName ? '?name=' + encodeURIComponent(tpName) : '');
+            openExternalAsZone('Chat', chatUrl, 'Turkish Guy', 'chat');
+        } else if (id) {
             const zone = zones.find(zone => zone.id + '' == id + '');
             if (zone) {
                 if (embed) {
@@ -1641,6 +1671,23 @@ function displayFeaturedZones(featuredZones) {
             'https://tpcdn.b-cdn.net/gh/CatHead132/CatHead132.github.io@main/hmmm.png',
             'Random Game', randomZone, { padding: '1rem' }
         ),
+        (() => {
+            const item = document.createElement('div');
+            item.className = 'zone-item';
+            item.style.cssText = 'display:flex;align-items:center;justify-content:center;background:#0a0a0a;';
+            item.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" style="width:60%;height:60%;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;z-index:2;"><path fill="#ffffff" d="M267.7 576.9C267.7 576.9 267.7 576.9 267.7 576.9L229.9 603.6C222.6 608.8 213 609.4 205 605.3C197 601.2 192 593 192 584L192 512L160 512C107 512 64 469 64 416L64 192C64 139 107 96 160 96L480 96C533 96 576 139 576 192L576 416C576 469 533 512 480 512L359.6 512L267.7 576.9zM332 472.8C340.1 467.1 349.8 464 359.7 464L480 464C506.5 464 528 442.5 528 416L528 192C528 165.5 506.5 144 480 144L160 144C133.5 144 112 165.5 112 192L112 416C112 442.5 133.5 464 160 464L216 464C226.4 464 235.3 470.6 238.6 479.9C239.5 482.4 240 485.1 240 488L240 537.7C272.7 514.6 303.3 493 331.9 472.8z"/></svg><button style="opacity:0;position:absolute;inset:0;z-index:5;background:rgba(0,0,0,0.55);color:white;border:0;font-weight:600;font-size:clamp(9px,1.1vw,13px);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:opacity 0.2s ease;">Chat</button>`;
+            const btn = item.querySelector('button');
+            const open = () => {
+                const tpName = localStorage.getItem('tp_username') || '';
+                const chatUrl = 'https://tpchat.b-cdn.net' + (tpName ? '?name=' + encodeURIComponent(tpName) : '');
+                openExternalAsZone('Chat', chatUrl, 'Turkish Guy', 'chat');
+            };
+            item.onclick = open;
+            btn.onclick = e => { e.stopPropagation(); open(); };
+            item.addEventListener('mouseenter', () => btn.style.opacity = '1');
+            item.addEventListener('mouseleave', () => btn.style.opacity = '0');
+            return item;
+        })(),
     ];
 
     const zoneItems = featuredZones.map(file => makeZoneItem(file, openZone));
@@ -1689,7 +1736,7 @@ function makeZoneItem(file, openFn) {
     const img = document.createElement('img');
     img.dataset.src = file.cover.replace('{COVER_URL}', coverURL).replace('{HTML_URL}', htmlURL);
     img.alt = file.name;
-    img.loading = 'auto';
+    img.loading = 'lazy';
     img.className = 'lazy-zone-img';
     zoneItem.appendChild(img);
 
@@ -1852,23 +1899,35 @@ const adKiller = `<script>(function(){
 }());<\/script>`;
 
 function writeToFrame(frame, html) {
-    const cleaned = html
+    let cleaned = html
         .replace(/https?:\/\/cdn\.jsdelivr\.net/g, 'https://tpcdn.b-cdn.net')
         .replace(/https?:\/\/rawgit\.com\/([^/]+)\/([^/]+)\/([^/]+)\/([^"'\s]+)/g, 'https://tpcdn.b-cdn.net/githack/$1/$2/$3/$4')
         .replace(/https?:\/\/raw\.githack\.com\/([^/]+)\/([^/]+)\/([^/]+)\/([^"'\s]+)/g, 'https://tpcdn.b-cdn.net/githack/$1/$2/$3/$4')
         .replace(/https?:\/\/rawcdn\.githack\.com\/([^/]+)\/([^/]+)\/([^/]+)\/([^"'\s]+)/g, 'https://tpcdn.b-cdn.net/githack/$1/$2/$3/$4')
-        .replace(/https?:\/\/raw\.githubusercontent\.com\/([^/]+)\/([^/]+)\/([^/]+)\/([^"'\s]+)/g, 'https://tpcdn.b-cdn.net/githack/$1/$2/$3/$4')
-        .replace(/<script[^>]*src=["'][^"']*(googletagmanager|googlesyndication|pagead2|fundingchoices|adsbygoogle)[^"']*["'][^>]*><\/script>/gi, '')
-        .replace(/<script[^>]*>\s*window\.dataLayer[\s\S]*?<\/script>/gi, '')
-        .replace(/<script[^>]*>\(function\(_0x[\s\S]*?<\/script>/g, '')
-        .replace(/<ins[^>]*adsbygoogle[\s\S]*?<\/ins>/gi, '')
-        .replace(/<script[^>]*>\s*(adsbygoogle[\s\S]*?)<\/script>/gi, '');
+        .replace(/https?:\/\/raw\.githubusercontent\.com\/([^/]+)\/([^/]+)\/([^/]+)\/([^"'\s]+)/g, 'https://tpcdn.b-cdn.net/githack/$1/$2/$3/$4');
+    const doc = new DOMParser().parseFromString(cleaned, 'text/html');
+    doc.querySelectorAll('script').forEach(s => {
+        const src = s.getAttribute('src') || '';
+        const content = s.textContent || '';
+        if (
+            src.match(/googletagmanager|googlesyndication|pagead2|fundingchoices|adsbygoogle/) ||
+            content.includes('window.dataLayer') ||
+            content.includes('while(!![])') ||
+            content.includes('adsbygoogle') ||
+            content.includes('UravPbGESYjDUNqxKcf')
+        ) s.remove();
+    });
+    doc.querySelectorAll('ins').forEach(el => {
+        if ((el.className || '').includes('adsbygoogle')) el.remove();
+    });
+    cleaned = doc.documentElement.outerHTML;
+    frame.style.background = '#000';
     frame.contentDocument.open();
     frame.contentDocument.write(adKiller + cleaned);
     frame.contentDocument.close();
 }
 
-function openExternalAsZone(name, src, author) {
+function openExternalAsZone(name, src, author, urlId) {
     if (zoneViewer.style.display === "flex") return;
     const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>*{margin:0;padding:0;box-sizing:border-box;}html,body{width:100%;height:100%;overflow:hidden;}iframe{position:fixed;top:0;left:0;width:100%;height:100%;border:none;}</style></head><body><iframe src="${src}" allowfullscreen></iframe></body></html>`;
     if (zoneFrame.contentDocument === null) {
@@ -1878,11 +1937,14 @@ function openExternalAsZone(name, src, author) {
     }
     writeToFrame(zoneFrame, html);
     document.getElementById('zoneName').textContent = name;
-    document.getElementById('zoneId').textContent = '';
+    document.getElementById('zoneId').textContent = urlId || '';
     document.getElementById('zoneAuthor').textContent = author ? "by " + author : '';
     document.getElementById('zoneAuthor').href = '#';
     zoneViewer.style.display = "flex";
     startPlaytimeTracking();
+    const u = new URL(window.location);
+    if (urlId) u.searchParams.set('id', urlId); else u.searchParams.delete('id');
+    history.pushState(null, '', u.toString());
     zoneViewer.hidden = false;
 }
 
@@ -2384,11 +2446,50 @@ listZones();
 
 const schoolList = ["deledao", "goguardian", "lightspeed", "linewize", "securly"];
 
+const adList = [
+    "doubleclick.net", "googlesyndication.com", "googletagmanager.com",
+    "googletagservices.com", "pagead2.googlesyndication.com", "adservice.google.com",
+    "fundingchoicesmessages.google.com", "adwords.google.com",
+    "google-analytics.com", "googleanalytics.com", "analytics.google.com",
+    "segment.com", "segment.io", "mixpanel.com", "hotjar.com", "fullstory.com",
+    "clarity.ms", "mouseflow.com", "smartlook.com", "logrocket.com",
+    "amplitude.com", "heap.io", "intercom.io", "intercomcdn.com",
+    "quantserve.com", "scorecardresearch.com", "comscore.com",
+    "bluekai.com", "kruxdigital.com", "krux.com",
+    "adnxs.com", "adnxs-simple.com", "adsrvr.org", "adform.net", "adform.com",
+    "casalemedia.com", "rubiconproject.com", "pubmatic.com", "openx.net", "openx.com",
+    "smartadserver.com", "serving-sys.com", "eyeota.net", "teads.tv", "teads.com",
+    "taboola.com", "outbrain.com", "revcontent.com", "mgid.com", "contentad.net",
+    "zergnet.com", "triplelift.com", "criteo.com", "criteo.net",
+    "adsystem.com", "amazon-adsystem.com", "media.net", "bidswitch.net",
+    "appnexus.com", "33across.com", "33across.net",
+    "advertising.com", "aolcdn.com", "oath.com",
+    "lijit.com", "sonobi.com", "sovrn.com", "sharethrough.com",
+    "indexww.com", "improvedigital.com", "yieldmo.com", "smaato.net", "smaato.com",
+    "undertone.com", "synacormedia.com", "contextweb.com", "pulsepoint.com",
+    "rhythmone.com", "1rx.io", "gumgum.com", "spotxchange.com", "spotx.tv",
+    "springserve.com", "springserve.net", "lkqd.net", "lkqd.com",
+    "popads.net", "popcash.net", "propellerads.com", "adcash.com",
+    "exoclick.com", "trafficjunky.com", "trafficfactory.biz",
+    "juicyads.com", "ero-advertising.com", "hilltopads.net",
+    "clickbank.net", "linksynergy.com", "shareasale.com", "impact.com",
+    "impactradius.com", "commission-junction.com", "cj.com",
+    "awin.com", "awin1.com", "zanox.com", "tradedoubler.com",
+    "adsymptotic.com", "adtelligent.com", "liveintent.com", "lotame.com",
+    "zeotap.com", "nielsen.com", "liveramp.com", "acuityads.com",
+    "id5-sync.com", "intentiq.com", "sharedid.org", "pubcid.org",
+    "adroll.com", "perfectaudience.com", "bizible.com", "marin software.com",
+    "kenshoo.com", "dv360.com", "flashtalking.com", "sizmek.com",
+    "trustarc.com", "onetrust.com", "cookielaw.org",
+];
+
 function isBlockedDomain(url) {
     if (!url || typeof url !== 'string') return false;
     try {
-        const domain = new URL(url, location.origin).hostname + "/";
-        return schoolList.some(school => domain.includes(school));
+        const hostname = new URL(url, location.origin).hostname;
+        if (schoolList.some(s => hostname.includes(s))) return true;
+        if (adList.some(ad => hostname === ad || hostname.endsWith('.' + ad))) return true;
+        return false;
     } catch (e) {
         return false;
     }
@@ -2397,8 +2498,8 @@ function isBlockedDomain(url) {
 const originalFetch = window.fetch;
 window.fetch = function (url, options) {
     if (url && isBlockedDomain(url)) {
-        console.warn(`lam`);
-        return Promise.reject(new Error("lam"));
+        console.warn(`[TP] Blocked request to: ${typeof url === 'string' ? url : url?.url}`);
+        return Promise.reject(new Error("Blocked"));
     }
     return originalFetch.apply(this, arguments);
 };
@@ -2406,10 +2507,36 @@ window.fetch = function (url, options) {
 const originalOpen = XMLHttpRequest.prototype.open;
 XMLHttpRequest.prototype.open = function (method, url) {
     if (url && isBlockedDomain(url)) {
-        console.warn(`lam`);
+        console.warn(`[TP] Blocked XHR to: ${url}`);
         return;
     }
     return originalOpen.apply(this, arguments);
+};
+
+const _origCreateElement = document.createElement.bind(document);
+document.createElement = function(tag) {
+    const el = _origCreateElement(tag);
+    if (tag.toLowerCase() === 'script') {
+        const _origSetAttribute = el.setAttribute.bind(el);
+        el.setAttribute = function(name, value) {
+            if (name === 'src' && isBlockedDomain(value)) {
+                console.warn(`[TP] Blocked script inject: ${value}`);
+                return;
+            }
+            return _origSetAttribute(name, value);
+        };
+        Object.defineProperty(el, 'src', {
+            set(value) {
+                if (isBlockedDomain(value)) {
+                    console.warn(`[TP] Blocked script src: ${value}`);
+                    return;
+                }
+                _origSetAttribute('src', value);
+            },
+            get() { return el.getAttribute('src') || ''; }
+        });
+    }
+    return el;
 };
 
 HTMLCanvasElement.prototype.toDataURL = function (...args) {
