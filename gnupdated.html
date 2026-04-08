@@ -1485,7 +1485,7 @@ setInterval(() => {
 async function listZones() {
     try {
       let sha;
-      const SHA_TTL = 5 * 60 * 1000;
+      const SHA_TTL = 5 * 60 * 1000; // 5 minutes
       const cachedSha = localStorage.getItem('tp_assets_sha');
       const cachedShaTime = parseInt(localStorage.getItem('tp_assets_sha_time') || '0');
       if (cachedSha && Date.now() - cachedShaTime < SHA_TTL) {
@@ -1537,7 +1537,8 @@ async function listZones() {
         const id = search.get('id');
         const embed = window.location.hash.includes("embed");
         if (id === 'chat') {
-            const tpName = localStorage.getItem('tp_username') || '';
+            const tpNameRaw = localStorage.getItem('tp_username') || '';
+            const tpName = tpNameRaw.replace(/\s+/g, '');
             const chatUrl = 'https://tpchat.b-cdn.net' + (tpName ? '?name=' + encodeURIComponent(tpName) : '');
             openExternalAsZone('Chat', chatUrl, 'Turkish Guy', 'chat');
         } else if (id) {
@@ -1899,12 +1900,14 @@ const adKiller = `<script>(function(){
 }());<\/script>`;
 
 function writeToFrame(frame, html) {
+    // Safe string replacements for CDN URLs
     let cleaned = html
         .replace(/https?:\/\/cdn\.jsdelivr\.net/g, 'https://tpcdn.b-cdn.net')
         .replace(/https?:\/\/rawgit\.com\/([^/]+)\/([^/]+)\/([^/]+)\/([^"'\s]+)/g, 'https://tpcdn.b-cdn.net/githack/$1/$2/$3/$4')
         .replace(/https?:\/\/raw\.githack\.com\/([^/]+)\/([^/]+)\/([^/]+)\/([^"'\s]+)/g, 'https://tpcdn.b-cdn.net/githack/$1/$2/$3/$4')
         .replace(/https?:\/\/rawcdn\.githack\.com\/([^/]+)\/([^/]+)\/([^/]+)\/([^"'\s]+)/g, 'https://tpcdn.b-cdn.net/githack/$1/$2/$3/$4')
         .replace(/https?:\/\/raw\.githubusercontent\.com\/([^/]+)\/([^/]+)\/([^/]+)\/([^"'\s]+)/g, 'https://tpcdn.b-cdn.net/githack/$1/$2/$3/$4');
+    // Use DOMParser to safely strip ad scripts without breaking legitimate ones
     const doc = new DOMParser().parseFromString(cleaned, 'text/html');
     doc.querySelectorAll('script').forEach(s => {
         const src = s.getAttribute('src') || '';
