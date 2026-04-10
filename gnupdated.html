@@ -1485,7 +1485,7 @@ setInterval(() => {
 async function listZones() {
     try {
       let sha;
-      const SHA_TTL = 5 * 60 * 1000; // 5 minutes
+      const SHA_TTL = 5 * 60 * 1000;
       const cachedSha = localStorage.getItem('tp_assets_sha');
       const cachedShaTime = parseInt(localStorage.getItem('tp_assets_sha_time') || '0');
       if (cachedSha && Date.now() - cachedShaTime < SHA_TTL) {
@@ -1900,14 +1900,12 @@ const adKiller = `<script>(function(){
 }());<\/script>`;
 
 function writeToFrame(frame, html) {
-    // Safe string replacements for CDN URLs
     let cleaned = html
         .replace(/https?:\/\/cdn\.jsdelivr\.net/g, 'https://tpcdn.b-cdn.net')
         .replace(/https?:\/\/rawgit\.com\/([^/]+)\/([^/]+)\/([^/]+)\/([^"'\s]+)/g, 'https://tpcdn.b-cdn.net/githack/$1/$2/$3/$4')
         .replace(/https?:\/\/raw\.githack\.com\/([^/]+)\/([^/]+)\/([^/]+)\/([^"'\s]+)/g, 'https://tpcdn.b-cdn.net/githack/$1/$2/$3/$4')
         .replace(/https?:\/\/rawcdn\.githack\.com\/([^/]+)\/([^/]+)\/([^/]+)\/([^"'\s]+)/g, 'https://tpcdn.b-cdn.net/githack/$1/$2/$3/$4')
         .replace(/https?:\/\/raw\.githubusercontent\.com\/([^/]+)\/([^/]+)\/([^/]+)\/([^"'\s]+)/g, 'https://tpcdn.b-cdn.net/githack/$1/$2/$3/$4');
-    // Use DOMParser to safely strip ad scripts without breaking legitimate ones
     const doc = new DOMParser().parseFromString(cleaned, 'text/html');
     doc.querySelectorAll('script').forEach(s => {
         const src = s.getAttribute('src') || '';
@@ -2375,6 +2373,26 @@ function stopPlaytimeTracking() {
     }
 }
 
+async function submitLeaderboard() {
+    const username = (localStorage.getItem('tp_username') || '').trim();
+    if (!username) {
+        alert('Please enter a username in the Leaderboard Username field first!');
+        return;
+    }
+    stopPlaytimeTracking();
+    if (playStartTime === null) startPlaytimeTracking();
+    try {
+        await fetch('https://tpws.b-cdn.net/leaderboard/submit', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, score: Math.floor(totalPlaytime), timestamp: Date.now() })
+        });
+        alert('Score submitted to leaderboard!');
+    } catch (e) {
+        alert('Failed to submit score: ' + e.message);
+    }
+}
+
 function formatPlaytime(seconds) {
     const days = Math.floor(seconds / 86400);
     const hours = Math.floor((seconds % 86400) / 3600);
@@ -2390,10 +2408,15 @@ settings.addEventListener('click', () => {
     const playtimeDisplay = formatPlaytime(totalPlaytime);
 
 popupBody.innerHTML = `
-    <div style="background: var(--primary-lighter); border: 1px solid var(--primary); border-radius: var(--radius); padding: 1rem; margin-bottom: 1.5rem; text-align: center;">
+    <div style="background: var(--primary-lighter); border: 1px solid var(--primary); border-radius: var(--radius); padding: 1rem; margin-bottom: 1rem; text-align: center;">
         <div style="font-size: 14px; color: var(--text-muted); margin-bottom: 0.5rem;">Total Playtime</div>
         <div style="font-size: 24px; font-weight: bold; color: var(--primary); font-family: 'Courier New', monospace;">${playtimeDisplay}</div>
+        <div style="display: flex; gap: 0.5rem; margin-top: 0.75rem; justify-content: center;">
+            <button onclick="submitLeaderboard()" style="background: linear-gradient(135deg, #c01e42 0%, #d93d5e 100%); color: white; border: none; padding: 0.5rem 1rem; border-radius: var(--radius-sm); font-size: 13px; font-weight: 600; cursor: pointer; flex: 1; max-width: 180px;">Submit to leaderboard</button>
+            <button onclick="window.open('https://tpws.b-cdn.net/leaderboard', '_blank')" style="background: var(--surface-hover); color: var(--text); border: 1px solid var(--border); padding: 0.5rem 1rem; border-radius: var(--radius-sm); font-size: 13px; font-weight: 600; cursor: pointer; flex: 1; max-width: 180px;">View leaderboard</button>
+        </div>
     </div>
+
 
     <div id="class-timer" style="background: var(--accent-light); border: 1px solid var(--accent); border-radius: var(--radius); padding: 1rem; margin-bottom: 1.5rem; text-align: center;">
         <div style="font-size: 14px; color: var(--text-muted); margin-bottom: 0.5rem;">Current Period</div>
