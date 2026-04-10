@@ -1910,6 +1910,9 @@ function writeToFrame(frame, html) {
     doc.querySelectorAll('script').forEach(s => {
         const src = s.getAttribute('src') || '';
         const content = s.textContent || '';
+
+        if (content.includes('WebSocket') || content.includes('chatEl') || content.includes('WS_URL')) return;
+
         if (
             src.match(/googletagmanager|googlesyndication|pagead2|fundingchoices|adsbygoogle/) ||
             content.includes('window.dataLayer') ||
