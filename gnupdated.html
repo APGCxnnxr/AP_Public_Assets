@@ -1855,6 +1855,54 @@ function filterZones() {
 }
 
 const adKiller = `<script>(function(){
+    const _origCreateElement = document.createElement.bind(document);
+    document.createElement = function(tag) {
+        const el = _origCreateElement(tag);
+        if (tag.toLowerCase() === 'script') {
+            const _origSetSrc = Object.getOwnPropertyDescriptor(HTMLScriptElement.prototype, 'src');
+            let _patchApplied = false;
+            function patchCGSDK() {
+                if (_patchApplied) return;
+                try {
+                    if (window.CrazyGames && window.CrazyGames.SDK) {
+                        _patchApplied = true;
+                        const sdk = window.CrazyGames.SDK;
+                        function patchAd(adObj) {
+                            if (!adObj) return;
+                            if (adObj.renderFakeAd) {
+                                adObj.renderFakeAd = async function() { this.requestInProgress = false; return Promise.resolve(); };
+                            }
+                            if (!adObj.addAdblockPopupListener) adObj.addAdblockPopupListener = function() {};
+                            if (!adObj.removeAdblockPopupListener) adObj.removeAdblockPopupListener = function() {};
+                        }
+                        try { patchAd(sdk.ad); } catch(e) {}
+                        try { if (sdk.sdk && sdk.sdk.adModule) patchAd(sdk.sdk.adModule); } catch(e) {}
+                    }
+                } catch(e) {}
+            }
+            el.addEventListener('load', function() {
+                setTimeout(patchCGSDK, 0);
+                setTimeout(patchCGSDK, 100);
+                setTimeout(patchCGSDK, 500);
+            });
+        }
+        return el;
+    };
+    function tryCGPatch() {
+        try {
+            if (!window.CrazyGames || !window.CrazyGames.SDK) return;
+            const sdk = window.CrazyGames.SDK;
+            function patchAd(adObj) {
+                if (!adObj) return;
+                if (adObj.renderFakeAd) adObj.renderFakeAd = async function() { this.requestInProgress = false; return Promise.resolve(); };
+                if (!adObj.addAdblockPopupListener) adObj.addAdblockPopupListener = function() {};
+                if (!adObj.removeAdblockPopupListener) adObj.removeAdblockPopupListener = function() {};
+            }
+            try { patchAd(sdk.ad); } catch(e) {}
+            try { if (sdk.sdk && sdk.sdk.adModule) patchAd(sdk.sdk.adModule); } catch(e) {}
+        } catch(e) {}
+    }
+    [100, 500, 1000, 2000, 3000].forEach(t => setTimeout(tryCGPatch, t));
     const _realOpen = window.open.bind(window);
     window.open = function(url, target, features) {
         if (!url || url === '' || url === 'about:blank') return null;
